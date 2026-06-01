@@ -1,0 +1,107 @@
+{
+  "case_id": "SignatureKernel__gaussN4L8d3_gaussYN3L8d3__n_levels4_normalizeFalse_order3_static_kernellinear__1c1ce331",
+  "created_utc": "2026-06-01T21:25:00.332307Z",
+  "cross_check_ok": true,
+  "cross_check_vs_oracle_max_abs": {
+    "diag": 1.3642420526593924e-12,
+    "gram": 1.3642420526593924e-12,
+    "xy": 1.6342482922482304e-13
+  },
+  "cross_check_vs_oracle_max_rel": {
+    "diag": 7.365569085599007e-15,
+    "gram": 3.9346513197102893e-14,
+    "xy": 8.42684315540597e-14
+  },
+  "dtype_out": "float64",
+  "entry": "SignatureKernel",
+  "golden_source": "legacy_cupy",
+  "ill_conditioned": false,
+  "inputs": {
+    "X": {
+      "builder": "gaussian",
+      "params": {
+        "L": 8,
+        "d": 3,
+        "n": 4,
+        "seed": 0
+      },
+      "shape": [
+        4,
+        8,
+        3
+      ]
+    },
+    "Y": {
+      "builder": "gaussian",
+      "params": {
+        "L": 8,
+        "d": 3,
+        "n": 3,
+        "seed": 10
+      },
+      "shape": [
+        3,
+        8,
+        3
+      ]
+    }
+  },
+  "kwargs": {
+    "n_levels": 4,
+    "normalize": false,
+    "order": 3,
+    "static_kernel": "linear"
+  },
+  "legacy_error": null,
+  "legacy_status": "ok",
+  "recommended_rtol": 1e-08,
+  "semantic_tags": [
+    "signature",
+    "order3",
+    "unnorm",
+    "linear",
+    "xy"
+  ],
+  "tolerance_class": "DP_CUMSUM",
+  "value_stats": {
+    "diag": {
+      "max": 1131.6479746582165,
+      "mean": 680.470732724923,
+      "min": 115.76176572414457,
+      "n_nonfinite": 0,
+      "shape": [
+        4
+      ]
+    },
+    "gram": {
+      "max": 1131.6479746582165,
+      "mean": 181.54685329824122,
+      "min": -47.12538689639189,
+      "n_nonfinite": 0,
+      "shape": [
+        4,
+        4
+      ]
+    },
+    "xy": {
+      "max": 58.53760117974994,
+      "mean": 9.458637584702757,
+      "min": -40.61923788157744,
+      "n_nonfinite": 0,
+      "shape": [
+        4,
+        3
+      ]
+    }
+  },
+  "versions": {
+    "cuda_runtime": 12090,
+    "cupy": "14.1.0",
+    "gpu_name": "NVIDIA H100 NVL",
+    "numba": "0.65.1",
+    "numpy": "2.2.6",
+    "python": "3.10.20",
+    "scipy": "1.15.3",
+    "sklearn": "1.7.2"
+  }
+}

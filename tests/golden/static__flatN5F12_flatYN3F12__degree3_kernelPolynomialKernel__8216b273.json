@@ -1,0 +1,78 @@
+{
+  "case_id": "static__flatN5F12_flatYN3F12__degree3_kernelPolynomialKernel__8216b273",
+  "created_utc": "2026-06-01T21:25:01.181531Z",
+  "cross_check_ok": true,
+  "cross_check_vs_oracle_max_abs": {
+    "value": 1.4210854715202004e-14
+  },
+  "cross_check_vs_oracle_max_rel": {
+    "value": 1.6799331431896735e-16
+  },
+  "dtype_out": "float64",
+  "entry": "static",
+  "golden_source": "legacy_cupy",
+  "ill_conditioned": false,
+  "inputs": {
+    "X": {
+      "builder": "flat_2d",
+      "params": {
+        "L": 4,
+        "d": 3,
+        "n": 5,
+        "seed": 0
+      },
+      "shape": [
+        5,
+        12
+      ]
+    },
+    "Y": {
+      "builder": "flat_2d",
+      "params": {
+        "L": 4,
+        "d": 3,
+        "n": 3,
+        "seed": 7
+      },
+      "shape": [
+        3,
+        12
+      ]
+    }
+  },
+  "kwargs": {
+    "degree": 3,
+    "kernel": "PolynomialKernel"
+  },
+  "legacy_error": null,
+  "legacy_status": "ok",
+  "recommended_rtol": 1e-10,
+  "semantic_tags": [
+    "static",
+    "xy",
+    "PolynomialKernel"
+  ],
+  "tolerance_class": "EXACT_ALGEBRA",
+  "value_stats": {
+    "value": {
+      "max": 113.57847202583983,
+      "mean": 7.426627926153391,
+      "min": -68.7649957720552,
+      "n_nonfinite": 0,
+      "shape": [
+        5,
+        3
+      ]
+    }
+  },
+  "versions": {
+    "cuda_runtime": 12090,
+    "cupy": "14.1.0",
+    "gpu_name": "NVIDIA H100 NVL",
+    "numba": "0.65.1",
+    "numpy": "2.2.6",
+    "python": "3.10.20",
+    "scipy": "1.15.3",
+    "sklearn": "1.7.2"
+  }
+}

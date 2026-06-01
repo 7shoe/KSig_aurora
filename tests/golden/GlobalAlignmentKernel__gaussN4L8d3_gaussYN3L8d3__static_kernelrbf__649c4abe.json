@@ -1,0 +1,101 @@
+{
+  "case_id": "GlobalAlignmentKernel__gaussN4L8d3_gaussYN3L8d3__static_kernelrbf__649c4abe",
+  "created_utc": "2026-06-01T21:25:01.155816Z",
+  "cross_check_ok": true,
+  "cross_check_vs_oracle_max_abs": {
+    "diag": 0.0,
+    "gram": 6.88214269644119e-22,
+    "xy": 4.235164736271502e-22
+  },
+  "cross_check_vs_oracle_max_rel": {
+    "diag": 0.0,
+    "gram": 5.516721838563419e-15,
+    "xy": 3.6969310670341304e-15
+  },
+  "dtype_out": "float64",
+  "entry": "GlobalAlignmentKernel",
+  "golden_source": "legacy_cupy",
+  "ill_conditioned": false,
+  "inputs": {
+    "X": {
+      "builder": "gaussian",
+      "params": {
+        "L": 8,
+        "d": 3,
+        "n": 4,
+        "seed": 0
+      },
+      "shape": [
+        4,
+        8,
+        3
+      ]
+    },
+    "Y": {
+      "builder": "gaussian",
+      "params": {
+        "L": 8,
+        "d": 3,
+        "n": 3,
+        "seed": 10
+      },
+      "shape": [
+        3,
+        8,
+        3
+      ]
+    }
+  },
+  "kwargs": {
+    "static_kernel": "rbf"
+  },
+  "legacy_error": null,
+  "legacy_status": "ok",
+  "recommended_rtol": 1e-08,
+  "semantic_tags": [
+    "gak",
+    "xy"
+  ],
+  "tolerance_class": "DP_CUMSUM",
+  "value_stats": {
+    "diag": {
+      "max": 1.0,
+      "mean": 1.0,
+      "min": 1.0,
+      "n_nonfinite": 0,
+      "shape": [
+        4
+      ]
+    },
+    "gram": {
+      "max": 1.0,
+      "mean": 0.25000004489181404,
+      "min": 5.6866210583711763e-11,
+      "n_nonfinite": 0,
+      "shape": [
+        4,
+        4
+      ]
+    },
+    "xy": {
+      "max": 9.047348355418598e-07,
+      "mean": 8.91265362413608e-08,
+      "min": 7.188561257144585e-14,
+      "n_nonfinite": 0,
+      "shape": [
+        4,
+        3
+      ]
+    }
+  },
+  "versions": {
+    "cuda_runtime": 12090,
+    "cupy": "14.1.0",
+    "gpu_name": "NVIDIA H100 NVL",
+    "numba": "0.65.1",
+    "numpy": "2.2.6",
+    "python": "3.10.20",
+    "scipy": "1.15.3",
+    "sklearn": "1.7.2"
+  }
+}

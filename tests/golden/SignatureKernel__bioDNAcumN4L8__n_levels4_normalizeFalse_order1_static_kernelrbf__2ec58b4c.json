@@ -1,0 +1,79 @@
+{
+  "case_id": "SignatureKernel__bioDNAcumN4L8__n_levels4_normalizeFalse_order1_static_kernelrbf__2ec58b4c",
+  "created_utc": "2026-06-01T21:24:59.864154Z",
+  "cross_check_ok": true,
+  "cross_check_vs_oracle_max_abs": {
+    "diag": 3.552713678800501e-15,
+    "gram": 3.552713678800501e-15
+  },
+  "cross_check_vs_oracle_max_rel": {
+    "diag": 1.3193856642625748e-16,
+    "gram": 4.3573709195743477e-16
+  },
+  "dtype_out": "float64",
+  "entry": "SignatureKernel",
+  "golden_source": "legacy_cupy",
+  "ill_conditioned": false,
+  "inputs": {
+    "X": {
+      "builder": "onehot_dna",
+      "params": {
+        "L": 8,
+        "n": 4,
+        "seed": 0
+      },
+      "shape": [
+        4,
+        8,
+        4
+      ]
+    }
+  },
+  "kwargs": {
+    "n_levels": 4,
+    "normalize": false,
+    "order": 1,
+    "static_kernel": "rbf"
+  },
+  "legacy_error": null,
+  "legacy_status": "ok",
+  "recommended_rtol": 1e-08,
+  "semantic_tags": [
+    "signature",
+    "order1",
+    "unnorm",
+    "rbf"
+  ],
+  "tolerance_class": "DP_CUMSUM",
+  "value_stats": {
+    "diag": {
+      "max": 26.927029564067368,
+      "mean": 22.664459956159497,
+      "min": 19.802629603550418,
+      "n_nonfinite": 0,
+      "shape": [
+        4
+      ]
+    },
+    "gram": {
+      "max": 26.927029564067368,
+      "mean": 7.124027982444369,
+      "min": 1.5199522060227582,
+      "n_nonfinite": 0,
+      "shape": [
+        4,
+        4
+      ]
+    }
+  },
+  "versions": {
+    "cuda_runtime": 12090,
+    "cupy": "14.1.0",
+    "gpu_name": "NVIDIA H100 NVL",
+    "numba": "0.65.1",
+    "numpy": "2.2.6",
+    "python": "3.10.20",
+    "scipy": "1.15.3",
+    "sklearn": "1.7.2"
+  }
+}

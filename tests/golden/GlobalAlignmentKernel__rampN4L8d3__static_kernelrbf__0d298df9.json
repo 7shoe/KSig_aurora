@@ -1,0 +1,75 @@
+{
+  "case_id": "GlobalAlignmentKernel__rampN4L8d3__static_kernelrbf__0d298df9",
+  "created_utc": "2026-06-01T21:25:01.136972Z",
+  "cross_check_ok": true,
+  "cross_check_vs_oracle_max_abs": {
+    "diag": 0.0,
+    "gram": 9.974659986866641e-18
+  },
+  "cross_check_vs_oracle_max_rel": {
+    "diag": 0.0,
+    "gram": 7.0984026832647236e-15
+  },
+  "dtype_out": "float64",
+  "entry": "GlobalAlignmentKernel",
+  "golden_source": "legacy_cupy",
+  "ill_conditioned": false,
+  "inputs": {
+    "X": {
+      "builder": "ramp",
+      "params": {
+        "L": 8,
+        "d": 3,
+        "n": 4,
+        "seed": 0
+      },
+      "shape": [
+        4,
+        8,
+        3
+      ]
+    }
+  },
+  "kwargs": {
+    "static_kernel": "rbf"
+  },
+  "legacy_error": null,
+  "legacy_status": "ok",
+  "recommended_rtol": 1e-08,
+  "semantic_tags": [
+    "gak",
+    "logspace"
+  ],
+  "tolerance_class": "DP_CUMSUM",
+  "value_stats": {
+    "diag": {
+      "max": 1.0,
+      "mean": 1.0,
+      "min": 1.0,
+      "n_nonfinite": 0,
+      "shape": [
+        4
+      ]
+    },
+    "gram": {
+      "max": 1.0,
+      "mean": 0.25046500300790786,
+      "min": 1.3794491517480309e-33,
+      "n_nonfinite": 0,
+      "shape": [
+        4,
+        4
+      ]
+    }
+  },
+  "versions": {
+    "cuda_runtime": 12090,
+    "cupy": "14.1.0",
+    "gpu_name": "NVIDIA H100 NVL",
+    "numba": "0.65.1",
+    "numpy": "2.2.6",
+    "python": "3.10.20",
+    "scipy": "1.15.3",
+    "sklearn": "1.7.2"
+  }
+}

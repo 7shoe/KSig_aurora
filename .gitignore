@@ -127,3 +127,6 @@ dmypy.json
 
 # Pyre type checker
 .pyre/
+
+# Monitoring benchmark artifacts (perf data, not committed)
+monitoring/results/

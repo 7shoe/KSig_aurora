@@ -1,0 +1,2146 @@
+{
+  "artifacts": [
+    {
+      "case_id": "SignatureKernel__gaussN4L8d3__n_levels4_normalizeTrue_order1_static_kernelrbf__f75c1bab",
+      "cross_check_max_abs": 8.326672684688674e-17,
+      "entry": "SignatureKernel",
+      "family": "DP_CUMSUM",
+      "golden_source": "legacy_cupy",
+      "ill_conditioned": false,
+      "keys": [
+        "gram",
+        "diag"
+      ],
+      "legacy_status": "ok",
+      "recommended_rtol": 1e-08
+    },
+    {
+      "case_id": "SignatureKernel__const07N4L8d3__n_levels4_normalizeTrue_order1_static_kernelrbf__1983d04f",
+      "cross_check_max_abs": 0.0,
+      "entry": "SignatureKernel",
+      "family": "DP_CUMSUM",
+      "golden_source": "legacy_cupy",
+      "ill_conditioned": false,
+      "keys": [
+        "gram",
+        "diag"
+      ],
+      "legacy_status": "ok",
+      "recommended_rtol": 1e-08
+    },
+    {
+      "case_id": "SignatureKernel__rampN4L8d3__n_levels4_normalizeTrue_order1_static_kernelrbf__40c927c8",
+      "cross_check_max_abs": 5.551115123125783e-16,
+      "entry": "SignatureKernel",
+      "family": "DP_CUMSUM",
+      "golden_source": "legacy_cupy",
+      "ill_conditioned": false,
+      "keys": [
+        "gram",
+        "diag"
+      ],
+      "legacy_status": "ok",
+      "recommended_rtol": 1e-08
+    },
+    {
+      "case_id": "SignatureKernel__bioDNAcumN4L8__n_levels4_normalizeTrue_order1_static_kernelrbf__b9ee4720",
+      "cross_check_max_abs": 5.551115123125783e-17,
+      "entry": "SignatureKernel",
+      "family": "DP_CUMSUM",
+      "golden_source": "legacy_cupy",
+      "ill_conditioned": false,
+      "keys": [
+        "gram",
+        "diag"
+      ],
+      "legacy_status": "ok",
+      "recommended_rtol": 1e-08
+    },
+    {
+      "case_id": "SignatureKernel__gaussN1L6d3__n_levels4_normalizeTrue_order1_static_kernelrbf__dfeaadbc",
+      "cross_check_max_abs": 0.0,
+      "entry": "SignatureKernel",
+      "family": "DP_CUMSUM",
+      "golden_source": "legacy_cupy",
+      "ill_conditioned": false,
+      "keys": [
+        "gram",
+        "diag"
+      ],
+      "legacy_status": "ok",
+      "recommended_rtol": 1e-08
+    },
+    {
+      "case_id": "SignatureKernel__gaussN3L1d3__n_levels4_normalizeTrue_order1_static_kernelrbf__ef7c515c",
+      "cross_check_max_abs": 0.0,
+      "entry": "SignatureKernel",
+      "family": "DP_CUMSUM",
+      "golden_source": "legacy_cupy",
+      "ill_conditioned": false,
+      "keys": [
+        "gram",
+        "diag"
+      ],
+      "legacy_status": "ok",
+      "recommended_rtol": 1e-08
+    },
+    {
+      "case_id": "SignatureKernel__gaussN3L7d1__n_levels4_normalizeTrue_order1_static_kernelrbf__ab2fc837",
+      "cross_check_max_abs": 2.942091015256665e-14,
+      "entry": "SignatureKernel",
+      "family": "DP_CUMSUM",
+      "golden_source": "legacy_cupy",
+      "ill_conditioned": false,
+      "keys": [
+        "gram",
+        "diag"
+      ],
+      "legacy_status": "ok",
+      "recommended_rtol": 1e-08
+    },
+    {
+      "case_id": "SignatureKernel__gaussN4L8d3_gaussYN3L8d3__n_levels4_normalizeTrue_order1_static_kernelrbf__a798b442",
+      "cross_check_max_abs": 1.6653345369377348e-16,
+      "entry": "SignatureKernel",
+      "family": "DP_CUMSUM",
+      "golden_source": "legacy_cupy",
+      "ill_conditioned": false,
+      "keys": [
+        "gram",
+        "diag",
+        "xy"
+      ],
+      "legacy_status": "ok",
+      "recommended_rtol": 1e-08
+    },
+    {
+      "case_id": "SignatureKernel__gaussN4L8d3__n_levels4_normalizeFalse_order1_static_kernelrbf__787885a7",
+      "cross_check_max_abs": 5.684341886080802e-14,
+      "entry": "SignatureKernel",
+      "family": "DP_CUMSUM",
+      "golden_source": "legacy_cupy",
+      "ill_conditioned": false,
+      "keys": [
+        "gram",
+        "diag"
+      ],
+      "legacy_status": "ok",
+      "recommended_rtol": 1e-08
+    },
+    {
+      "case_id": "SignatureKernel__const07N4L8d3__n_levels4_normalizeFalse_order1_static_kernelrbf__a860e1e5",
+      "cross_check_max_abs": 0.0,
+      "entry": "SignatureKernel",
+      "family": "DP_CUMSUM",
+      "golden_source": "legacy_cupy",
+      "ill_conditioned": false,
+      "keys": [
+        "gram",
+        "diag"
+      ],
+      "legacy_status": "ok",
+      "recommended_rtol": 1e-08
+    },
+    {
+      "case_id": "SignatureKernel__rampN4L8d3__n_levels4_normalizeFalse_order1_static_kernelrbf__675108cf",
+      "cross_check_max_abs": 6.394884621840902e-14,
+      "entry": "SignatureKernel",
+      "family": "DP_CUMSUM",
+      "golden_source": "legacy_cupy",
+      "ill_conditioned": false,
+      "keys": [
+        "gram",
+        "diag"
+      ],
+      "legacy_status": "ok",
+      "recommended_rtol": 1e-08
+    },
+    {
+      "case_id": "SignatureKernel__bioDNAcumN4L8__n_levels4_normalizeFalse_order1_static_kernelrbf__2ec58b4c",
+      "cross_check_max_abs": 3.552713678800501e-15,
+      "entry": "SignatureKernel",
+      "family": "DP_CUMSUM",
+      "golden_source": "legacy_cupy",
+      "ill_conditioned": false,
+      "keys": [
+        "gram",
+        "diag"
+      ],
+      "legacy_status": "ok",
+      "recommended_rtol": 1e-08
+    },
+    {
+      "case_id": "SignatureKernel__gaussN1L6d3__n_levels4_normalizeFalse_order1_static_kernelrbf__0e2a4835",
+      "cross_check_max_abs": 3.552713678800501e-15,
+      "entry": "SignatureKernel",
+      "family": "DP_CUMSUM",
+      "golden_source": "legacy_cupy",
+      "ill_conditioned": false,
+      "keys": [
+        "gram",
+        "diag"
+      ],
+      "legacy_status": "ok",
+      "recommended_rtol": 1e-08
+    },
+    {
+      "case_id": "SignatureKernel__gaussN3L1d3__n_levels4_normalizeFalse_order1_static_kernelrbf__9f573555",
+      "cross_check_max_abs": 0.0,
+      "entry": "SignatureKernel",
+      "family": "DP_CUMSUM",
+      "golden_source": "legacy_cupy",
+      "ill_conditioned": false,
+      "keys": [
+        "gram",
+        "diag"
+      ],
+      "legacy_status": "ok",
+      "recommended_rtol": 1e-08
+    },
+    {
+      "case_id": "SignatureKernel__gaussN3L7d1__n_levels4_normalizeFalse_order1_static_kernelrbf__28222f05",
+      "cross_check_max_abs": 3.552713678800501e-15,
+      "entry": "SignatureKernel",
+      "family": "DP_CUMSUM",
+      "golden_source": "legacy_cupy",
+      "ill_conditioned": false,
+      "keys": [
+        "gram",
+        "diag"
+      ],
+      "legacy_status": "ok",
+      "recommended_rtol": 1e-08
+    },
+    {
+      "case_id": "SignatureKernel__gaussN4L8d3_gaussYN3L8d3__n_levels4_normalizeFalse_order1_static_kernelrbf__c93456a7",
+      "cross_check_max_abs": 5.684341886080802e-14,
+      "entry": "SignatureKernel",
+      "family": "DP_CUMSUM",
+      "golden_source": "legacy_cupy",
+      "ill_conditioned": false,
+      "keys": [
+        "gram",
+        "diag",
+        "xy"
+      ],
+      "legacy_status": "ok",
+      "recommended_rtol": 1e-08
+    },
+    {
+      "case_id": "SignatureKernel__gaussN4L8d3__n_levels4_normalizeTrue_order2_static_kernelrbf__398582c9",
+      "cross_check_max_abs": 2.220446049250313e-16,
+      "entry": "SignatureKernel",
+      "family": "DP_CUMSUM",
+      "golden_source": "legacy_cupy",
+      "ill_conditioned": false,
+      "keys": [
+        "gram",
+        "diag"
+      ],
+      "legacy_status": "ok",
+      "recommended_rtol": 1e-08
+    },
+    {
+      "case_id": "SignatureKernel__const07N4L8d3__n_levels4_normalizeTrue_order2_static_kernelrbf__7750a9c3",
+      "cross_check_max_abs": 0.0,
+      "entry": "SignatureKernel",
+      "family": "DP_CUMSUM",
+      "golden_source": "legacy_cupy",
+      "ill_conditioned": false,
+      "keys": [
+        "gram",
+        "diag"
+      ],
+      "legacy_status": "ok",
+      "recommended_rtol": 1e-08
+    },
+    {
+      "case_id": "SignatureKernel__rampN4L8d3__n_levels4_normalizeTrue_order2_static_kernelrbf__62c68c00",
+      "cross_check_max_abs": 4.440892098500626e-16,
+      "entry": "SignatureKernel",
+      "family": "DP_CUMSUM",
+      "golden_source": "legacy_cupy",
+      "ill_conditioned": false,
+      "keys": [
+        "gram",
+        "diag"
+      ],
+      "legacy_status": "ok",
+      "recommended_rtol": 1e-08
+    },
+    {
+      "case_id": "SignatureKernel__bioDNAcumN4L8__n_levels4_normalizeTrue_order2_static_kernelrbf__c01e7b03",
+      "cross_check_max_abs": 2.220446049250313e-16,
+      "entry": "SignatureKernel",
+      "family": "DP_CUMSUM",
+      "golden_source": "legacy_cupy",
+      "ill_conditioned": false,
+      "keys": [
+        "gram",
+        "diag"
+      ],
+      "legacy_status": "ok",
+      "recommended_rtol": 1e-08
+    },
+    {
+      "case_id": "SignatureKernel__gaussN1L6d3__n_levels4_normalizeTrue_order2_static_kernelrbf__ad0c731c",
+      "cross_check_max_abs": 0.0,
+      "entry": "SignatureKernel",
+      "family": "DP_CUMSUM",
+      "golden_source": "legacy_cupy",
+      "ill_conditioned": false,
+      "keys": [
+        "gram",
+        "diag"
+      ],
+      "legacy_status": "ok",
+      "recommended_rtol": 1e-08
+    },
+    {
+      "case_id": "SignatureKernel__gaussN3L1d3__n_levels4_normalizeTrue_order2_static_kernelrbf__f4fe79d8",
+      "cross_check_max_abs": 0.0,
+      "entry": "SignatureKernel",
+      "family": "DP_CUMSUM",
+      "golden_source": "legacy_cupy",
+      "ill_conditioned": false,
+      "keys": [
+        "gram",
+        "diag"
+      ],
+      "legacy_status": "ok",
+      "recommended_rtol": 1e-08
+    },
+    {
+      "case_id": "SignatureKernel__gaussN3L7d1__n_levels4_normalizeTrue_order2_static_kernelrbf__884de0e4",
+      "cross_check_max_abs": 2.964295475749168e-14,
+      "entry": "SignatureKernel",
+      "family": "DP_CUMSUM",
+      "golden_source": "legacy_cupy",
+      "ill_conditioned": false,
+      "keys": [
+        "gram",
+        "diag"
+      ],
+      "legacy_status": "ok",
+      "recommended_rtol": 1e-08
+    },
+    {
+      "case_id": "SignatureKernel__gaussN4L8d3_gaussYN3L8d3__n_levels4_normalizeTrue_order2_static_kernelrbf__05db4081",
+      "cross_check_max_abs": 2.220446049250313e-16,
+      "entry": "SignatureKernel",
+      "family": "DP_CUMSUM",
+      "golden_source": "legacy_cupy",
+      "ill_conditioned": false,
+      "keys": [
+        "gram",
+        "diag",
+        "xy"
+      ],
+      "legacy_status": "ok",
+      "recommended_rtol": 1e-08
+    },
+    {
+      "case_id": "SignatureKernel__gaussN4L8d3__n_levels4_normalizeFalse_order2_static_kernelrbf__bf38a401",
+      "cross_check_max_abs": 1.7763568394002505e-14,
+      "entry": "SignatureKernel",
+      "family": "DP_CUMSUM",
+      "golden_source": "legacy_cupy",
+      "ill_conditioned": false,
+      "keys": [
+        "gram",
+        "diag"
+      ],
+      "legacy_status": "ok",
+      "recommended_rtol": 1e-08
+    },
+    {
+      "case_id": "SignatureKernel__const07N4L8d3__n_levels4_normalizeFalse_order2_static_kernelrbf__347de3c4",
+      "cross_check_max_abs": 0.0,
+      "entry": "SignatureKernel",
+      "family": "DP_CUMSUM",
+      "golden_source": "legacy_cupy",
+      "ill_conditioned": false,
+      "keys": [
+        "gram",
+        "diag"
+      ],
+      "legacy_status": "ok",
+      "recommended_rtol": 1e-08
+    },
+    {
+      "case_id": "SignatureKernel__rampN4L8d3__n_levels4_normalizeFalse_order2_static_kernelrbf__5ab0038c",
+      "cross_check_max_abs": 8.526512829121202e-14,
+      "entry": "SignatureKernel",
+      "family": "DP_CUMSUM",
+      "golden_source": "legacy_cupy",
+      "ill_conditioned": false,
+      "keys": [
+        "gram",
+        "diag"
+      ],
+      "legacy_status": "ok",
+      "recommended_rtol": 1e-08
+    },
+    {
+      "case_id": "SignatureKernel__bioDNAcumN4L8__n_levels4_normalizeFalse_order2_static_kernelrbf__fe470387",
+      "cross_check_max_abs": 7.105427357601002e-15,
+      "entry": "SignatureKernel",
+      "family": "DP_CUMSUM",
+      "golden_source": "legacy_cupy",
+      "ill_conditioned": false,
+      "keys": [
+        "gram",
+        "diag"
+      ],
+      "legacy_status": "ok",
+      "recommended_rtol": 1e-08
+    },
+    {
+      "case_id": "SignatureKernel__gaussN1L6d3__n_levels4_normalizeFalse_order2_static_kernelrbf__52ca9d62",
+      "cross_check_max_abs": 3.552713678800501e-15,
+      "entry": "SignatureKernel",
+      "family": "DP_CUMSUM",
+      "golden_source": "legacy_cupy",
+      "ill_conditioned": false,
+      "keys": [
+        "gram",
+        "diag"
+      ],
+      "legacy_status": "ok",
+      "recommended_rtol": 1e-08
+    },
+    {
+      "case_id": "SignatureKernel__gaussN3L1d3__n_levels4_normalizeFalse_order2_static_kernelrbf__53f912d2",
+      "cross_check_max_abs": 0.0,
+      "entry": "SignatureKernel",
+      "family": "DP_CUMSUM",
+      "golden_source": "legacy_cupy",
+      "ill_conditioned": false,
+      "keys": [
+        "gram",
+        "diag"
+      ],
+      "legacy_status": "ok",
+      "recommended_rtol": 1e-08
+    },
+    {
+      "case_id": "SignatureKernel__gaussN3L7d1__n_levels4_normalizeFalse_order2_static_kernelrbf__e682c0cd",
+      "cross_check_max_abs": 2.886579864025407e-15,
+      "entry": "SignatureKernel",
+      "family": "DP_CUMSUM",
+      "golden_source": "legacy_cupy",
+      "ill_conditioned": false,
+      "keys": [
+        "gram",
+        "diag"
+      ],
+      "legacy_status": "ok",
+      "recommended_rtol": 1e-08
+    },
+    {
+      "case_id": "SignatureKernel__gaussN4L8d3_gaussYN3L8d3__n_levels4_normalizeFalse_order2_static_kernelrbf__a9b6219b",
+      "cross_check_max_abs": 1.7763568394002505e-14,
+      "entry": "SignatureKernel",
+      "family": "DP_CUMSUM",
+      "golden_source": "legacy_cupy",
+      "ill_conditioned": false,
+      "keys": [
+        "gram",
+        "diag",
+        "xy"
+      ],
+      "legacy_status": "ok",
+      "recommended_rtol": 1e-08
+    },
+    {
+      "case_id": "SignatureKernel__gaussN4L8d3__n_levels4_normalizeTrue_order3_static_kernelrbf__51a2ada0",
+      "cross_check_max_abs": 9.71445146547012e-17,
+      "entry": "SignatureKernel",
+      "family": "DP_CUMSUM",
+      "golden_source": "legacy_cupy",
+      "ill_conditioned": false,
+      "keys": [
+        "gram",
+        "diag"
+      ],
+      "legacy_status": "ok",
+      "recommended_rtol": 1e-08
+    },
+    {
+      "case_id": "SignatureKernel__const07N4L8d3__n_levels4_normalizeTrue_order3_static_kernelrbf__d70e5a82",
+      "cross_check_max_abs": 0.0,
+      "entry": "SignatureKernel",
+      "family": "DP_CUMSUM",
+      "golden_source": "legacy_cupy",
+      "ill_conditioned": false,
+      "keys": [
+        "gram",
+        "diag"
+      ],
+      "legacy_status": "ok",
+      "recommended_rtol": 1e-08
+    },
+    {
+      "case_id": "SignatureKernel__rampN4L8d3__n_levels4_normalizeTrue_order3_static_kernelrbf__e9a6829e",
+      "cross_check_max_abs": 5.551115123125783e-16,
+      "entry": "SignatureKernel",
+      "family": "DP_CUMSUM",
+      "golden_source": "legacy_cupy",
+      "ill_conditioned": false,
+      "keys": [
+        "gram",
+        "diag"
+      ],
+      "legacy_status": "ok",
+      "recommended_rtol": 1e-08
+    },
+    {
+      "case_id": "SignatureKernel__bioDNAcumN4L8__n_levels4_normalizeTrue_order3_static_kernelrbf__886ea3d5",
+      "cross_check_max_abs": 5.551115123125783e-17,
+      "entry": "SignatureKernel",
+      "family": "DP_CUMSUM",
+      "golden_source": "legacy_cupy",
+      "ill_conditioned": false,
+      "keys": [
+        "gram",
+        "diag"
+      ],
+      "legacy_status": "ok",
+      "recommended_rtol": 1e-08
+    },
+    {
+      "case_id": "SignatureKernel__gaussN1L6d3__n_levels4_normalizeTrue_order3_static_kernelrbf__2e0dee23",
+      "cross_check_max_abs": 0.0,
+      "entry": "SignatureKernel",
+      "family": "DP_CUMSUM",
+      "golden_source": "legacy_cupy",
+      "ill_conditioned": false,
+      "keys": [
+        "gram",
+        "diag"
+      ],
+      "legacy_status": "ok",
+      "recommended_rtol": 1e-08
+    },
+    {
+      "case_id": "SignatureKernel__gaussN3L1d3__n_levels4_normalizeTrue_order3_static_kernelrbf__85391dd2",
+      "cross_check_max_abs": 0.0,
+      "entry": "SignatureKernel",
+      "family": "DP_CUMSUM",
+      "golden_source": "legacy_cupy",
+      "ill_conditioned": false,
+      "keys": [
+        "gram",
+        "diag"
+      ],
+      "legacy_status": "ok",
+      "recommended_rtol": 1e-08
+    },
+    {
+      "case_id": "SignatureKernel__gaussN3L7d1__n_levels4_normalizeTrue_order3_static_kernelrbf__3716a48a",
+      "cross_check_max_abs": 2.964295475749168e-14,
+      "entry": "SignatureKernel",
+      "family": "DP_CUMSUM",
+      "golden_source": "legacy_cupy",
+      "ill_conditioned": false,
+      "keys": [
+        "gram",
+        "diag"
+      ],
+      "legacy_status": "ok",
+      "recommended_rtol": 1e-08
+    },
+    {
+      "case_id": "SignatureKernel__gaussN4L8d3_gaussYN3L8d3__n_levels4_normalizeTrue_order3_static_kernelrbf__e717dcc0",
+      "cross_check_max_abs": 1.942890293094024e-16,
+      "entry": "SignatureKernel",
+      "family": "DP_CUMSUM",
+      "golden_source": "legacy_cupy",
+      "ill_conditioned": false,
+      "keys": [
+        "gram",
+        "diag",
+        "xy"
+      ],
+      "legacy_status": "ok",
+      "recommended_rtol": 1e-08
+    },
+    {
+      "case_id": "SignatureKernel__gaussN4L8d3__n_levels4_normalizeFalse_order3_static_kernelrbf__ca9a38e6",
+      "cross_check_max_abs": 2.1316282072803006e-14,
+      "entry": "SignatureKernel",
+      "family": "DP_CUMSUM",
+      "golden_source": "legacy_cupy",
+      "ill_conditioned": false,
+      "keys": [
+        "gram",
+        "diag"
+      ],
+      "legacy_status": "ok",
+      "recommended_rtol": 1e-08
+    },
+    {
+      "case_id": "SignatureKernel__const07N4L8d3__n_levels4_normalizeFalse_order3_static_kernelrbf__697e337d",
+      "cross_check_max_abs": 0.0,
+      "entry": "SignatureKernel",
+      "family": "DP_CUMSUM",
+      "golden_source": "legacy_cupy",
+      "ill_conditioned": false,
+      "keys": [
+        "gram",
+        "diag"
+      ],
+      "legacy_status": "ok",
+      "recommended_rtol": 1e-08
+    },
+    {
+      "case_id": "SignatureKernel__rampN4L8d3__n_levels4_normalizeFalse_order3_static_kernelrbf__a8fb7da3",
+      "cross_check_max_abs": 8.526512829121202e-14,
+      "entry": "SignatureKernel",
+      "family": "DP_CUMSUM",
+      "golden_source": "legacy_cupy",
+      "ill_conditioned": false,
+      "keys": [
+        "gram",
+        "diag"
+      ],
+      "legacy_status": "ok",
+      "recommended_rtol": 1e-08
+    },
+    {
+      "case_id": "SignatureKernel__bioDNAcumN4L8__n_levels4_normalizeFalse_order3_static_kernelrbf__b843694b",
+      "cross_check_max_abs": 7.105427357601002e-15,
+      "entry": "SignatureKernel",
+      "family": "DP_CUMSUM",
+      "golden_source": "legacy_cupy",
+      "ill_conditioned": false,
+      "keys": [
+        "gram",
+        "diag"
+      ],
+      "legacy_status": "ok",
+      "recommended_rtol": 1e-08
+    },
+    {
+      "case_id": "SignatureKernel__gaussN1L6d3__n_levels4_normalizeFalse_order3_static_kernelrbf__4278b0e5",
+      "cross_check_max_abs": 2.6645352591003757e-15,
+      "entry": "SignatureKernel",
+      "family": "DP_CUMSUM",
+      "golden_source": "legacy_cupy",
+      "ill_conditioned": false,
+      "keys": [
+        "gram",
+        "diag"
+      ],
+      "legacy_status": "ok",
+      "recommended_rtol": 1e-08
+    },
+    {
+      "case_id": "SignatureKernel__gaussN3L1d3__n_levels4_normalizeFalse_order3_static_kernelrbf__c19cb633",
+      "cross_check_max_abs": 0.0,
+      "entry": "SignatureKernel",
+      "family": "DP_CUMSUM",
+      "golden_source": "legacy_cupy",
+      "ill_conditioned": false,
+      "keys": [
+        "gram",
+        "diag"
+      ],
+      "legacy_status": "ok",
+      "recommended_rtol": 1e-08
+    },
+    {
+      "case_id": "SignatureKernel__gaussN3L7d1__n_levels4_normalizeFalse_order3_static_kernelrbf__2c31fb2c",
+      "cross_check_max_abs": 3.552713678800501e-15,
+      "entry": "SignatureKernel",
+      "family": "DP_CUMSUM",
+      "golden_source": "legacy_cupy",
+      "ill_conditioned": false,
+      "keys": [
+        "gram",
+        "diag"
+      ],
+      "legacy_status": "ok",
+      "recommended_rtol": 1e-08
+    },
+    {
+      "case_id": "SignatureKernel__gaussN4L8d3_gaussYN3L8d3__n_levels4_normalizeFalse_order3_static_kernelrbf__a57b8af5",
+      "cross_check_max_abs": 2.1316282072803006e-14,
+      "entry": "SignatureKernel",
+      "family": "DP_CUMSUM",
+      "golden_source": "legacy_cupy",
+      "ill_conditioned": false,
+      "keys": [
+        "gram",
+        "diag",
+        "xy"
+      ],
+      "legacy_status": "ok",
+      "recommended_rtol": 1e-08
+    },
+    {
+      "case_id": "SignatureKernel__gaussN4L8d3__n_levels4_normalizeTrue_order1_static_kernellinear__10c305bc",
+      "cross_check_max_abs": 2.914335439641036e-16,
+      "entry": "SignatureKernel",
+      "family": "DP_CUMSUM",
+      "golden_source": "legacy_cupy",
+      "ill_conditioned": false,
+      "keys": [
+        "gram",
+        "diag"
+      ],
+      "legacy_status": "ok",
+      "recommended_rtol": 1e-08
+    },
+    {
+      "case_id": "SignatureKernel__const07N4L8d3__n_levels4_normalizeTrue_order1_static_kernellinear__5ec48897",
+      "cross_check_max_abs": 0.0,
+      "entry": "SignatureKernel",
+      "family": "DP_CUMSUM",
+      "golden_source": "legacy_cupy",
+      "ill_conditioned": false,
+      "keys": [
+        "gram",
+        "diag"
+      ],
+      "legacy_status": "ok",
+      "recommended_rtol": 1e-08
+    },
+    {
+      "case_id": "SignatureKernel__rampN4L8d3__n_levels4_normalizeTrue_order1_static_kernellinear__7f9e9e5a",
+      "cross_check_max_abs": 8.881784197001252e-16,
+      "entry": "SignatureKernel",
+      "family": "DP_CUMSUM",
+      "golden_source": "legacy_cupy",
+      "ill_conditioned": false,
+      "keys": [
+        "gram",
+        "diag"
+      ],
+      "legacy_status": "ok",
+      "recommended_rtol": 1e-08
+    },
+    {
+      "case_id": "SignatureKernel__bioDNAcumN4L8__n_levels4_normalizeTrue_order1_static_kernellinear__8bd7439c",
+      "cross_check_max_abs": 1.6653345369377348e-16,
+      "entry": "SignatureKernel",
+      "family": "DP_CUMSUM",
+      "golden_source": "legacy_cupy",
+      "ill_conditioned": false,
+      "keys": [
+        "gram",
+        "diag"
+      ],
+      "legacy_status": "ok",
+      "recommended_rtol": 1e-08
+    },
+    {
+      "case_id": "SignatureKernel__gaussN1L6d3__n_levels4_normalizeTrue_order1_static_kernellinear__6477d45f",
+      "cross_check_max_abs": 2.220446049250313e-16,
+      "entry": "SignatureKernel",
+      "family": "DP_CUMSUM",
+      "golden_source": "legacy_cupy",
+      "ill_conditioned": false,
+      "keys": [
+        "gram",
+        "diag"
+      ],
+      "legacy_status": "ok",
+      "recommended_rtol": 1e-08
+    },
+    {
+      "case_id": "SignatureKernel__gaussN3L1d3__n_levels4_normalizeTrue_order1_static_kernellinear__243f0728",
+      "cross_check_max_abs": 0.0,
+      "entry": "SignatureKernel",
+      "family": "DP_CUMSUM",
+      "golden_source": "legacy_cupy",
+      "ill_conditioned": false,
+      "keys": [
+        "gram",
+        "diag"
+      ],
+      "legacy_status": "ok",
+      "recommended_rtol": 1e-08
+    },
+    {
+      "case_id": "SignatureKernel__gaussN3L7d1__n_levels4_normalizeTrue_order1_static_kernellinear__1e46ae20",
+      "cross_check_max_abs": 5.384581669432009e-13,
+      "entry": "SignatureKernel",
+      "family": "DP_CUMSUM",
+      "golden_source": "legacy_cupy",
+      "ill_conditioned": false,
+      "keys": [
+        "gram",
+        "diag"
+      ],
+      "legacy_status": "ok",
+      "recommended_rtol": 1e-08
+    },
+    {
+      "case_id": "SignatureKernel__gaussN4L8d3_gaussYN3L8d3__n_levels4_normalizeTrue_order1_static_kernellinear__756b8112",
+      "cross_check_max_abs": 7.494005416219807e-16,
+      "entry": "SignatureKernel",
+      "family": "DP_CUMSUM",
+      "golden_source": "legacy_cupy",
+      "ill_conditioned": false,
+      "keys": [
+        "gram",
+        "diag",
+        "xy"
+      ],
+      "legacy_status": "ok",
+      "recommended_rtol": 1e-08
+    },
+    {
+      "case_id": "SignatureKernel__gaussN4L8d3__n_levels4_normalizeFalse_order1_static_kernellinear__5015e3f8",
+      "cross_check_max_abs": 3.637978807091713e-12,
+      "entry": "SignatureKernel",
+      "family": "DP_CUMSUM",
+      "golden_source": "legacy_cupy",
+      "ill_conditioned": false,
+      "keys": [
+        "gram",
+        "diag"
+      ],
+      "legacy_status": "ok",
+      "recommended_rtol": 1e-08
+    },
+    {
+      "case_id": "SignatureKernel__const07N4L8d3__n_levels4_normalizeFalse_order1_static_kernellinear__322702db",
+      "cross_check_max_abs": 0.0,
+      "entry": "SignatureKernel",
+      "family": "DP_CUMSUM",
+      "golden_source": "legacy_cupy",
+      "ill_conditioned": false,
+      "keys": [
+        "gram",
+        "diag"
+      ],
+      "legacy_status": "ok",
+      "recommended_rtol": 1e-08
+    },
+    {
+      "case_id": "SignatureKernel__rampN4L8d3__n_levels4_normalizeFalse_order1_static_kernellinear__dda5b04e",
+      "cross_check_max_abs": 5.820766091346741e-11,
+      "entry": "SignatureKernel",
+      "family": "DP_CUMSUM",
+      "golden_source": "legacy_cupy",
+      "ill_conditioned": false,
+      "keys": [
+        "gram",
+        "diag"
+      ],
+      "legacy_status": "ok",
+      "recommended_rtol": 1e-08
+    },
+    {
+      "case_id": "SignatureKernel__bioDNAcumN4L8__n_levels4_normalizeFalse_order1_static_kernellinear__59976d04",
+      "cross_check_max_abs": 0.0,
+      "entry": "SignatureKernel",
+      "family": "DP_CUMSUM",
+      "golden_source": "legacy_cupy",
+      "ill_conditioned": false,
+      "keys": [
+        "gram",
+        "diag"
+      ],
+      "legacy_status": "ok",
+      "recommended_rtol": 1e-08
+    },
+    {
+      "case_id": "SignatureKernel__gaussN1L6d3__n_levels4_normalizeFalse_order1_static_kernellinear__362c43f5",
+      "cross_check_max_abs": 4.547473508864641e-13,
+      "entry": "SignatureKernel",
+      "family": "DP_CUMSUM",
+      "golden_source": "legacy_cupy",
+      "ill_conditioned": false,
+      "keys": [
+        "gram",
+        "diag"
+      ],
+      "legacy_status": "ok",
+      "recommended_rtol": 1e-08
+    },
+    {
+      "case_id": "SignatureKernel__gaussN3L1d3__n_levels4_normalizeFalse_order1_static_kernellinear__b6c0ff8e",
+      "cross_check_max_abs": 0.0,
+      "entry": "SignatureKernel",
+      "family": "DP_CUMSUM",
+      "golden_source": "legacy_cupy",
+      "ill_conditioned": false,
+      "keys": [
+        "gram",
+        "diag"
+      ],
+      "legacy_status": "ok",
+      "recommended_rtol": 1e-08
+    },
+    {
+      "case_id": "SignatureKernel__gaussN3L7d1__n_levels4_normalizeFalse_order1_static_kernellinear__c1fb057e",
+      "cross_check_max_abs": 1.8189894035458565e-12,
+      "entry": "SignatureKernel",
+      "family": "DP_CUMSUM",
+      "golden_source": "legacy_cupy",
+      "ill_conditioned": false,
+      "keys": [
+        "gram",
+        "diag"
+      ],
+      "legacy_status": "ok",
+      "recommended_rtol": 1e-08
+    },
+    {
+      "case_id": "SignatureKernel__gaussN4L8d3_gaussYN3L8d3__n_levels4_normalizeFalse_order1_static_kernellinear__99a2cd8c",
+      "cross_check_max_abs": 3.637978807091713e-12,
+      "entry": "SignatureKernel",
+      "family": "DP_CUMSUM",
+      "golden_source": "legacy_cupy",
+      "ill_conditioned": false,
+      "keys": [
+        "gram",
+        "diag",
+        "xy"
+      ],
+      "legacy_status": "ok",
+      "recommended_rtol": 1e-08
+    },
+    {
+      "case_id": "SignatureKernel__gaussN4L8d3__n_levels4_normalizeTrue_order2_static_kernellinear__4e46791b",
+      "cross_check_max_abs": 1.304512053934559e-15,
+      "entry": "SignatureKernel",
+      "family": "DP_CUMSUM",
+      "golden_source": "legacy_cupy",
+      "ill_conditioned": false,
+      "keys": [
+        "gram",
+        "diag"
+      ],
+      "legacy_status": "ok",
+      "recommended_rtol": 1e-08
+    },
+    {
+      "case_id": "SignatureKernel__const07N4L8d3__n_levels4_normalizeTrue_order2_static_kernellinear__b0df1d8a",
+      "cross_check_max_abs": 0.0,
+      "entry": "SignatureKernel",
+      "family": "DP_CUMSUM",
+      "golden_source": "legacy_cupy",
+      "ill_conditioned": false,
+      "keys": [
+        "gram",
+        "diag"
+      ],
+      "legacy_status": "ok",
+      "recommended_rtol": 1e-08
+    },
+    {
+      "case_id": "SignatureKernel__rampN4L8d3__n_levels4_normalizeTrue_order2_static_kernellinear__dea7adf5",
+      "cross_check_max_abs": 5.551115123125783e-16,
+      "entry": "SignatureKernel",
+      "family": "DP_CUMSUM",
+      "golden_source": "legacy_cupy",
+      "ill_conditioned": false,
+      "keys": [
+        "gram",
+        "diag"
+      ],
+      "legacy_status": "ok",
+      "recommended_rtol": 1e-08
+    },
+    {
+      "case_id": "SignatureKernel__bioDNAcumN4L8__n_levels4_normalizeTrue_order2_static_kernellinear__f3887a9e",
+      "cross_check_max_abs": 1.1102230246251565e-16,
+      "entry": "SignatureKernel",
+      "family": "DP_CUMSUM",
+      "golden_source": "legacy_cupy",
+      "ill_conditioned": false,
+      "keys": [
+        "gram",
+        "diag"
+      ],
+      "legacy_status": "ok",
+      "recommended_rtol": 1e-08
+    },
+    {
+      "case_id": "SignatureKernel__gaussN1L6d3__n_levels4_normalizeTrue_order2_static_kernellinear__885ac31f",
+      "cross_check_max_abs": 0.0,
+      "entry": "SignatureKernel",
+      "family": "DP_CUMSUM",
+      "golden_source": "legacy_cupy",
+      "ill_conditioned": false,
+      "keys": [
+        "gram",
+        "diag"
+      ],
+      "legacy_status": "ok",
+      "recommended_rtol": 1e-08
+    },
+    {
+      "case_id": "SignatureKernel__gaussN3L1d3__n_levels4_normalizeTrue_order2_static_kernellinear__06c4f4a9",
+      "cross_check_max_abs": 0.0,
+      "entry": "SignatureKernel",
+      "family": "DP_CUMSUM",
+      "golden_source": "legacy_cupy",
+      "ill_conditioned": false,
+      "keys": [
+        "gram",
+        "diag"
+      ],
+      "legacy_status": "ok",
+      "recommended_rtol": 1e-08
+    },
+    {
+      "case_id": "SignatureKernel__gaussN3L7d1__n_levels4_normalizeTrue_order2_static_kernellinear__e44e907e",
+      "cross_check_max_abs": 1.1028223889653077e-09,
+      "entry": "SignatureKernel",
+      "family": "DP_CUMSUM",
+      "golden_source": "legacy_cupy",
+      "ill_conditioned": false,
+      "keys": [
+        "gram",
+        "diag"
+      ],
+      "legacy_status": "ok",
+      "recommended_rtol": 1e-08
+    },
+    {
+      "case_id": "SignatureKernel__gaussN4L8d3_gaussYN3L8d3__n_levels4_normalizeTrue_order2_static_kernellinear__4b03d93d",
+      "cross_check_max_abs": 1.4988010832439613e-15,
+      "entry": "SignatureKernel",
+      "family": "DP_CUMSUM",
+      "golden_source": "legacy_cupy",
+      "ill_conditioned": false,
+      "keys": [
+        "gram",
+        "diag",
+        "xy"
+      ],
+      "legacy_status": "ok",
+      "recommended_rtol": 1e-08
+    },
+    {
+      "case_id": "SignatureKernel__gaussN4L8d3__n_levels4_normalizeFalse_order2_static_kernellinear__a464d496",
+      "cross_check_max_abs": 5.684341886080801e-13,
+      "entry": "SignatureKernel",
+      "family": "DP_CUMSUM",
+      "golden_source": "legacy_cupy",
+      "ill_conditioned": false,
+      "keys": [
+        "gram",
+        "diag"
+      ],
+      "legacy_status": "ok",
+      "recommended_rtol": 1e-08
+    },
+    {
+      "case_id": "SignatureKernel__const07N4L8d3__n_levels4_normalizeFalse_order2_static_kernellinear__ec522c9a",
+      "cross_check_max_abs": 0.0,
+      "entry": "SignatureKernel",
+      "family": "DP_CUMSUM",
+      "golden_source": "legacy_cupy",
+      "ill_conditioned": false,
+      "keys": [
+        "gram",
+        "diag"
+      ],
+      "legacy_status": "ok",
+      "recommended_rtol": 1e-08
+    },
+    {
+      "case_id": "SignatureKernel__rampN4L8d3__n_levels4_normalizeFalse_order2_static_kernellinear__f72e5884",
+      "cross_check_max_abs": 3.4924596548080444e-10,
+      "entry": "SignatureKernel",
+      "family": "DP_CUMSUM",
+      "golden_source": "legacy_cupy",
+      "ill_conditioned": false,
+      "keys": [
+        "gram",
+        "diag"
+      ],
+      "legacy_status": "ok",
+      "recommended_rtol": 1e-08
+    },
+    {
+      "case_id": "SignatureKernel__bioDNAcumN4L8__n_levels4_normalizeFalse_order2_static_kernellinear__ef0160c7",
+      "cross_check_max_abs": 0.0,
+      "entry": "SignatureKernel",
+      "family": "DP_CUMSUM",
+      "golden_source": "legacy_cupy",
+      "ill_conditioned": false,
+      "keys": [
+        "gram",
+        "diag"
+      ],
+      "legacy_status": "ok",
+      "recommended_rtol": 1e-08
+    },
+    {
+      "case_id": "SignatureKernel__gaussN1L6d3__n_levels4_normalizeFalse_order2_static_kernellinear__ad474d76",
+      "cross_check_max_abs": 1.1368683772161603e-13,
+      "entry": "SignatureKernel",
+      "family": "DP_CUMSUM",
+      "golden_source": "legacy_cupy",
+      "ill_conditioned": false,
+      "keys": [
+        "gram",
+        "diag"
+      ],
+      "legacy_status": "ok",
+      "recommended_rtol": 1e-08
+    },
+    {
+      "case_id": "SignatureKernel__gaussN3L1d3__n_levels4_normalizeFalse_order2_static_kernellinear__f73fec33",
+      "cross_check_max_abs": 0.0,
+      "entry": "SignatureKernel",
+      "family": "DP_CUMSUM",
+      "golden_source": "legacy_cupy",
+      "ill_conditioned": false,
+      "keys": [
+        "gram",
+        "diag"
+      ],
+      "legacy_status": "ok",
+      "recommended_rtol": 1e-08
+    },
+    {
+      "case_id": "SignatureKernel__gaussN3L7d1__n_levels4_normalizeFalse_order2_static_kernellinear__1705921c",
+      "cross_check_max_abs": 9.094947017729282e-13,
+      "entry": "SignatureKernel",
+      "family": "DP_CUMSUM",
+      "golden_source": "legacy_cupy",
+      "ill_conditioned": false,
+      "keys": [
+        "gram",
+        "diag"
+      ],
+      "legacy_status": "ok",
+      "recommended_rtol": 1e-08
+    },
+    {
+      "case_id": "SignatureKernel__gaussN4L8d3_gaussYN3L8d3__n_levels4_normalizeFalse_order2_static_kernellinear__b4d7012d",
+      "cross_check_max_abs": 5.684341886080801e-13,
+      "entry": "SignatureKernel",
+      "family": "DP_CUMSUM",
+      "golden_source": "legacy_cupy",
+      "ill_conditioned": false,
+      "keys": [
+        "gram",
+        "diag",
+        "xy"
+      ],
+      "legacy_status": "ok",
+      "recommended_rtol": 1e-08
+    },
+    {
+      "case_id": "SignatureKernel__gaussN4L8d3__n_levels4_normalizeTrue_order3_static_kernellinear__e2995bde",
+      "cross_check_max_abs": 1.0547118733938987e-15,
+      "entry": "SignatureKernel",
+      "family": "DP_CUMSUM",
+      "golden_source": "legacy_cupy",
+      "ill_conditioned": false,
+      "keys": [
+        "gram",
+        "diag"
+      ],
+      "legacy_status": "ok",
+      "recommended_rtol": 1e-08
+    },
+    {
+      "case_id": "SignatureKernel__const07N4L8d3__n_levels4_normalizeTrue_order3_static_kernellinear__ca1b11a9",
+      "cross_check_max_abs": 0.0,
+      "entry": "SignatureKernel",
+      "family": "DP_CUMSUM",
+      "golden_source": "legacy_cupy",
+      "ill_conditioned": false,
+      "keys": [
+        "gram",
+        "diag"
+      ],
+      "legacy_status": "ok",
+      "recommended_rtol": 1e-08
+    },
+    {
+      "case_id": "SignatureKernel__rampN4L8d3__n_levels4_normalizeTrue_order3_static_kernellinear__acb64bb2",
+      "cross_check_max_abs": 3.3306690738754696e-16,
+      "entry": "SignatureKernel",
+      "family": "DP_CUMSUM",
+      "golden_source": "legacy_cupy",
+      "ill_conditioned": false,
+      "keys": [
+        "gram",
+        "diag"
+      ],
+      "legacy_status": "ok",
+      "recommended_rtol": 1e-08
+    },
+    {
+      "case_id": "SignatureKernel__bioDNAcumN4L8__n_levels4_normalizeTrue_order3_static_kernellinear__494dc7cb",
+      "cross_check_max_abs": 1.1102230246251565e-16,
+      "entry": "SignatureKernel",
+      "family": "DP_CUMSUM",
+      "golden_source": "legacy_cupy",
+      "ill_conditioned": false,
+      "keys": [
+        "gram",
+        "diag"
+      ],
+      "legacy_status": "ok",
+      "recommended_rtol": 1e-08
+    },
+    {
+      "case_id": "SignatureKernel__gaussN1L6d3__n_levels4_normalizeTrue_order3_static_kernellinear__01941a87",
+      "cross_check_max_abs": 0.0,
+      "entry": "SignatureKernel",
+      "family": "DP_CUMSUM",
+      "golden_source": "legacy_cupy",
+      "ill_conditioned": false,
+      "keys": [
+        "gram",
+        "diag"
+      ],
+      "legacy_status": "ok",
+      "recommended_rtol": 1e-08
+    },
+    {
+      "case_id": "SignatureKernel__gaussN3L1d3__n_levels4_normalizeTrue_order3_static_kernellinear__a0804c1c",
+      "cross_check_max_abs": 0.0,
+      "entry": "SignatureKernel",
+      "family": "DP_CUMSUM",
+      "golden_source": "legacy_cupy",
+      "ill_conditioned": false,
+      "keys": [
+        "gram",
+        "diag"
+      ],
+      "legacy_status": "ok",
+      "recommended_rtol": 1e-08
+    },
+    {
+      "case_id": "SignatureKernel__gaussN3L7d1__n_levels4_normalizeTrue_order3_static_kernellinear__73be08ed",
+      "cross_check_max_abs": 0.00012459873498271712,
+      "entry": "SignatureKernel",
+      "family": "DP_CUMSUM",
+      "golden_source": "legacy_cupy",
+      "ill_conditioned": true,
+      "keys": [
+        "gram",
+        "diag"
+      ],
+      "legacy_status": "ok",
+      "recommended_rtol": 0.0012459061088839676
+    },
+    {
+      "case_id": "SignatureKernel__gaussN4L8d3_gaussYN3L8d3__n_levels4_normalizeTrue_order3_static_kernellinear__4a96838c",
+      "cross_check_max_abs": 1.0547118733938987e-15,
+      "entry": "SignatureKernel",
+      "family": "DP_CUMSUM",
+      "golden_source": "legacy_cupy",
+      "ill_conditioned": false,
+      "keys": [
+        "gram",
+        "diag",
+        "xy"
+      ],
+      "legacy_status": "ok",
+      "recommended_rtol": 1e-08
+    },
+    {
+      "case_id": "SignatureKernel__gaussN4L8d3__n_levels4_normalizeFalse_order3_static_kernellinear__7af5fbf0",
+      "cross_check_max_abs": 1.3642420526593924e-12,
+      "entry": "SignatureKernel",
+      "family": "DP_CUMSUM",
+      "golden_source": "legacy_cupy",
+      "ill_conditioned": false,
+      "keys": [
+        "gram",
+        "diag"
+      ],
+      "legacy_status": "ok",
+      "recommended_rtol": 1e-08
+    },
+    {
+      "case_id": "SignatureKernel__const07N4L8d3__n_levels4_normalizeFalse_order3_static_kernellinear__eb3ae1c9",
+      "cross_check_max_abs": 0.0,
+      "entry": "SignatureKernel",
+      "family": "DP_CUMSUM",
+      "golden_source": "legacy_cupy",
+      "ill_conditioned": false,
+      "keys": [
+        "gram",
+        "diag"
+      ],
+      "legacy_status": "ok",
+      "recommended_rtol": 1e-08
+    },
+    {
+      "case_id": "SignatureKernel__rampN4L8d3__n_levels4_normalizeFalse_order3_static_kernellinear__f561f073",
+      "cross_check_max_abs": 4.656612873077393e-10,
+      "entry": "SignatureKernel",
+      "family": "DP_CUMSUM",
+      "golden_source": "legacy_cupy",
+      "ill_conditioned": false,
+      "keys": [
+        "gram",
+        "diag"
+      ],
+      "legacy_status": "ok",
+      "recommended_rtol": 1e-08
+    },
+    {
+      "case_id": "SignatureKernel__bioDNAcumN4L8__n_levels4_normalizeFalse_order3_static_kernellinear__b9d20170",
+      "cross_check_max_abs": 2.2737367544323206e-13,
+      "entry": "SignatureKernel",
+      "family": "DP_CUMSUM",
+      "golden_source": "legacy_cupy",
+      "ill_conditioned": false,
+      "keys": [
+        "gram",
+        "diag"
+      ],
+      "legacy_status": "ok",
+      "recommended_rtol": 1e-08
+    },
+    {
+      "case_id": "SignatureKernel__gaussN1L6d3__n_levels4_normalizeFalse_order3_static_kernellinear__077b4a95",
+      "cross_check_max_abs": 0.0,
+      "entry": "SignatureKernel",
+      "family": "DP_CUMSUM",
+      "golden_source": "legacy_cupy",
+      "ill_conditioned": false,
+      "keys": [
+        "gram",
+        "diag"
+      ],
+      "legacy_status": "ok",
+      "recommended_rtol": 1e-08
+    },
+    {
+      "case_id": "SignatureKernel__gaussN3L1d3__n_levels4_normalizeFalse_order3_static_kernellinear__b5f6d1d7",
+      "cross_check_max_abs": 0.0,
+      "entry": "SignatureKernel",
+      "family": "DP_CUMSUM",
+      "golden_source": "legacy_cupy",
+      "ill_conditioned": false,
+      "keys": [
+        "gram",
+        "diag"
+      ],
+      "legacy_status": "ok",
+      "recommended_rtol": 1e-08
+    },
+    {
+      "case_id": "SignatureKernel__gaussN3L7d1__n_levels4_normalizeFalse_order3_static_kernellinear__6690fc09",
+      "cross_check_max_abs": 1.4779288903810084e-12,
+      "entry": "SignatureKernel",
+      "family": "DP_CUMSUM",
+      "golden_source": "legacy_cupy",
+      "ill_conditioned": false,
+      "keys": [
+        "gram",
+        "diag"
+      ],
+      "legacy_status": "ok",
+      "recommended_rtol": 1e-08
+    },
+    {
+      "case_id": "SignatureKernel__gaussN4L8d3_gaussYN3L8d3__n_levels4_normalizeFalse_order3_static_kernellinear__1c1ce331",
+      "cross_check_max_abs": 1.3642420526593924e-12,
+      "entry": "SignatureKernel",
+      "family": "DP_CUMSUM",
+      "golden_source": "legacy_cupy",
+      "ill_conditioned": false,
+      "keys": [
+        "gram",
+        "diag",
+        "xy"
+      ],
+      "legacy_status": "ok",
+      "recommended_rtol": 1e-08
+    },
+    {
+      "case_id": "SignatureKernel__gaussN4L8d3__n_levels1_normalizeFalse_order1_static_kernelrbf__16bb8cd4",
+      "cross_check_max_abs": 2.220446049250313e-15,
+      "entry": "SignatureKernel",
+      "family": "DP_CUMSUM",
+      "golden_source": "legacy_cupy",
+      "ill_conditioned": false,
+      "keys": [
+        "gram",
+        "diag"
+      ],
+      "legacy_status": "ok",
+      "recommended_rtol": 1e-08
+    },
+    {
+      "case_id": "SignatureKernel__gaussN4L8d3__n_levels2_normalizeFalse_order1_static_kernelrbf__0b3be419",
+      "cross_check_max_abs": 7.105427357601002e-15,
+      "entry": "SignatureKernel",
+      "family": "DP_CUMSUM",
+      "golden_source": "legacy_cupy",
+      "ill_conditioned": false,
+      "keys": [
+        "gram",
+        "diag"
+      ],
+      "legacy_status": "ok",
+      "recommended_rtol": 1e-08
+    },
+    {
+      "case_id": "SignatureKernel__gaussN4L8d3__n_levels5_normalizeFalse_order1_static_kernelrbf__61248814",
+      "cross_check_max_abs": 1.4210854715202004e-13,
+      "entry": "SignatureKernel",
+      "family": "DP_CUMSUM",
+      "golden_source": "legacy_cupy",
+      "ill_conditioned": false,
+      "keys": [
+        "gram",
+        "diag"
+      ],
+      "legacy_status": "ok",
+      "recommended_rtol": 1e-08
+    },
+    {
+      "case_id": "SignaturePDEKernel__gaussN4L8d3__differenceTrue_normalizeTrue_static_kernelrbf__69e57f8f",
+      "cross_check_max_abs": 3.191891195797325e-16,
+      "entry": "SignaturePDEKernel",
+      "family": "DP_CUMSUM",
+      "golden_source": "legacy_cupy",
+      "ill_conditioned": false,
+      "keys": [
+        "gram",
+        "diag"
+      ],
+      "legacy_status": "ok",
+      "recommended_rtol": 1e-08
+    },
+    {
+      "case_id": "SignaturePDEKernel__const07N4L8d3__differenceTrue_normalizeTrue_static_kernelrbf__e24155ee",
+      "cross_check_max_abs": 0.0,
+      "entry": "SignaturePDEKernel",
+      "family": "DP_CUMSUM",
+      "golden_source": "legacy_cupy",
+      "ill_conditioned": false,
+      "keys": [
+        "gram",
+        "diag"
+      ],
+      "legacy_status": "ok",
+      "recommended_rtol": 1e-08
+    },
+    {
+      "case_id": "SignaturePDEKernel__rampN4L8d3__differenceTrue_normalizeTrue_static_kernelrbf__6e97a5de",
+      "cross_check_max_abs": 1.3322676295501878e-15,
+      "entry": "SignaturePDEKernel",
+      "family": "DP_CUMSUM",
+      "golden_source": "legacy_cupy",
+      "ill_conditioned": false,
+      "keys": [
+        "gram",
+        "diag"
+      ],
+      "legacy_status": "ok",
+      "recommended_rtol": 1e-08
+    },
+    {
+      "case_id": "SignaturePDEKernel__gaussN3L1d3__differenceTrue_normalizeTrue_static_kernelrbf__68355d4f",
+      "cross_check_max_abs": null,
+      "entry": "SignaturePDEKernel",
+      "family": "DP_CUMSUM",
+      "golden_source": "numpy_oracle",
+      "ill_conditioned": false,
+      "keys": [
+        "gram",
+        "diag"
+      ],
+      "legacy_status": "broken",
+      "recommended_rtol": 1e-08
+    },
+    {
+      "case_id": "SignaturePDEKernel__gaussN4L8d3_gaussYN3L8d3__differenceTrue_normalizeTrue_static_kernelrbf__4626520d",
+      "cross_check_max_abs": 4.3021142204224816e-16,
+      "entry": "SignaturePDEKernel",
+      "family": "DP_CUMSUM",
+      "golden_source": "legacy_cupy",
+      "ill_conditioned": false,
+      "keys": [
+        "gram",
+        "diag",
+        "xy"
+      ],
+      "legacy_status": "ok",
+      "recommended_rtol": 1e-08
+    },
+    {
+      "case_id": "SignaturePDEKernel__gaussN4L8d3__differenceTrue_normalizeFalse_static_kernelrbf__eeea43c3",
+      "cross_check_max_abs": 9.237055564881302e-14,
+      "entry": "SignaturePDEKernel",
+      "family": "DP_CUMSUM",
+      "golden_source": "legacy_cupy",
+      "ill_conditioned": false,
+      "keys": [
+        "gram",
+        "diag"
+      ],
+      "legacy_status": "ok",
+      "recommended_rtol": 1e-08
+    },
+    {
+      "case_id": "SignaturePDEKernel__const07N4L8d3__differenceTrue_normalizeFalse_static_kernelrbf__3311e193",
+      "cross_check_max_abs": 0.0,
+      "entry": "SignaturePDEKernel",
+      "family": "DP_CUMSUM",
+      "golden_source": "legacy_cupy",
+      "ill_conditioned": false,
+      "keys": [
+        "gram",
+        "diag"
+      ],
+      "legacy_status": "ok",
+      "recommended_rtol": 1e-08
+    },
+    {
+      "case_id": "SignaturePDEKernel__rampN4L8d3__differenceTrue_normalizeFalse_static_kernelrbf__ed5d84b5",
+      "cross_check_max_abs": 1.2434497875801753e-13,
+      "entry": "SignaturePDEKernel",
+      "family": "DP_CUMSUM",
+      "golden_source": "legacy_cupy",
+      "ill_conditioned": false,
+      "keys": [
+        "gram",
+        "diag"
+      ],
+      "legacy_status": "ok",
+      "recommended_rtol": 1e-08
+    },
+    {
+      "case_id": "SignaturePDEKernel__gaussN3L1d3__differenceTrue_normalizeFalse_static_kernelrbf__18d4fad4",
+      "cross_check_max_abs": null,
+      "entry": "SignaturePDEKernel",
+      "family": "DP_CUMSUM",
+      "golden_source": "numpy_oracle",
+      "ill_conditioned": false,
+      "keys": [
+        "gram",
+        "diag"
+      ],
+      "legacy_status": "broken",
+      "recommended_rtol": 1e-08
+    },
+    {
+      "case_id": "SignaturePDEKernel__gaussN4L8d3_gaussYN3L8d3__differenceTrue_normalizeFalse_static_kernelrbf__e0335d5a",
+      "cross_check_max_abs": 9.237055564881302e-14,
+      "entry": "SignaturePDEKernel",
+      "family": "DP_CUMSUM",
+      "golden_source": "legacy_cupy",
+      "ill_conditioned": false,
+      "keys": [
+        "gram",
+        "diag",
+        "xy"
+      ],
+      "legacy_status": "ok",
+      "recommended_rtol": 1e-08
+    },
+    {
+      "case_id": "SignaturePDEKernel__gaussN4L8d3__differenceFalse_normalizeTrue_static_kernelrbf__81e48a5a",
+      "cross_check_max_abs": 3.3306690738754696e-16,
+      "entry": "SignaturePDEKernel",
+      "family": "DP_CUMSUM",
+      "golden_source": "legacy_cupy",
+      "ill_conditioned": false,
+      "keys": [
+        "gram",
+        "diag"
+      ],
+      "legacy_status": "ok",
+      "recommended_rtol": 1e-08
+    },
+    {
+      "case_id": "SignaturePDEKernel__const07N4L8d3__differenceFalse_normalizeTrue_static_kernelrbf__f1696708",
+      "cross_check_max_abs": 0.0,
+      "entry": "SignaturePDEKernel",
+      "family": "DP_CUMSUM",
+      "golden_source": "legacy_cupy",
+      "ill_conditioned": false,
+      "keys": [
+        "gram",
+        "diag"
+      ],
+      "legacy_status": "ok",
+      "recommended_rtol": 1e-08
+    },
+    {
+      "case_id": "SignaturePDEKernel__rampN4L8d3__differenceFalse_normalizeTrue_static_kernelrbf__07ff15ed",
+      "cross_check_max_abs": 1.1657341758564144e-15,
+      "entry": "SignaturePDEKernel",
+      "family": "DP_CUMSUM",
+      "golden_source": "legacy_cupy",
+      "ill_conditioned": false,
+      "keys": [
+        "gram",
+        "diag"
+      ],
+      "legacy_status": "ok",
+      "recommended_rtol": 1e-08
+    },
+    {
+      "case_id": "SignaturePDEKernel__gaussN3L1d3__differenceFalse_normalizeTrue_static_kernelrbf__0acd17b8",
+      "cross_check_max_abs": 0.0,
+      "entry": "SignaturePDEKernel",
+      "family": "DP_CUMSUM",
+      "golden_source": "legacy_cupy",
+      "ill_conditioned": false,
+      "keys": [
+        "gram",
+        "diag"
+      ],
+      "legacy_status": "ok",
+      "recommended_rtol": 1e-08
+    },
+    {
+      "case_id": "SignaturePDEKernel__gaussN4L8d3_gaussYN3L8d3__differenceFalse_normalizeTrue_static_kernelrbf__158ed1c7",
+      "cross_check_max_abs": 3.3306690738754696e-16,
+      "entry": "SignaturePDEKernel",
+      "family": "DP_CUMSUM",
+      "golden_source": "legacy_cupy",
+      "ill_conditioned": false,
+      "keys": [
+        "gram",
+        "diag",
+        "xy"
+      ],
+      "legacy_status": "ok",
+      "recommended_rtol": 1e-08
+    },
+    {
+      "case_id": "SignaturePDEKernel__gaussN4L8d3__differenceFalse_normalizeFalse_static_kernelrbf__13d2d340",
+      "cross_check_max_abs": 3.183231456205249e-12,
+      "entry": "SignaturePDEKernel",
+      "family": "DP_CUMSUM",
+      "golden_source": "legacy_cupy",
+      "ill_conditioned": false,
+      "keys": [
+        "gram",
+        "diag"
+      ],
+      "legacy_status": "ok",
+      "recommended_rtol": 1e-08
+    },
+    {
+      "case_id": "SignaturePDEKernel__const07N4L8d3__differenceFalse_normalizeFalse_static_kernelrbf__2474762c",
+      "cross_check_max_abs": 4.656612873077393e-10,
+      "entry": "SignaturePDEKernel",
+      "family": "DP_CUMSUM",
+      "golden_source": "legacy_cupy",
+      "ill_conditioned": false,
+      "keys": [
+        "gram",
+        "diag"
+      ],
+      "legacy_status": "ok",
+      "recommended_rtol": 1e-08
+    },
+    {
+      "case_id": "SignaturePDEKernel__rampN4L8d3__differenceFalse_normalizeFalse_static_kernelrbf__f3a68b7c",
+      "cross_check_max_abs": 4.656612873077393e-10,
+      "entry": "SignaturePDEKernel",
+      "family": "DP_CUMSUM",
+      "golden_source": "legacy_cupy",
+      "ill_conditioned": false,
+      "keys": [
+        "gram",
+        "diag"
+      ],
+      "legacy_status": "ok",
+      "recommended_rtol": 1e-08
+    },
+    {
+      "case_id": "SignaturePDEKernel__gaussN3L1d3__differenceFalse_normalizeFalse_static_kernelrbf__c9645f3c",
+      "cross_check_max_abs": 2.6645352591003757e-15,
+      "entry": "SignaturePDEKernel",
+      "family": "DP_CUMSUM",
+      "golden_source": "legacy_cupy",
+      "ill_conditioned": false,
+      "keys": [
+        "gram",
+        "diag"
+      ],
+      "legacy_status": "ok",
+      "recommended_rtol": 1e-08
+    },
+    {
+      "case_id": "SignaturePDEKernel__gaussN4L8d3_gaussYN3L8d3__differenceFalse_normalizeFalse_static_kernelrbf__f0ec935c",
+      "cross_check_max_abs": 3.183231456205249e-12,
+      "entry": "SignaturePDEKernel",
+      "family": "DP_CUMSUM",
+      "golden_source": "legacy_cupy",
+      "ill_conditioned": false,
+      "keys": [
+        "gram",
+        "diag",
+        "xy"
+      ],
+      "legacy_status": "ok",
+      "recommended_rtol": 1e-08
+    },
+    {
+      "case_id": "GlobalAlignmentKernel__gaussN4L8d3__static_kernelrbf__72aa0025",
+      "cross_check_max_abs": 6.88214269644119e-22,
+      "entry": "GlobalAlignmentKernel",
+      "family": "DP_CUMSUM",
+      "golden_source": "legacy_cupy",
+      "ill_conditioned": false,
+      "keys": [
+        "gram",
+        "diag"
+      ],
+      "legacy_status": "ok",
+      "recommended_rtol": 1e-08
+    },
+    {
+      "case_id": "GlobalAlignmentKernel__const07N4L8d3__static_kernelrbf__c383013a",
+      "cross_check_max_abs": 0.0,
+      "entry": "GlobalAlignmentKernel",
+      "family": "DP_CUMSUM",
+      "golden_source": "legacy_cupy",
+      "ill_conditioned": false,
+      "keys": [
+        "gram",
+        "diag"
+      ],
+      "legacy_status": "ok",
+      "recommended_rtol": 1e-08
+    },
+    {
+      "case_id": "GlobalAlignmentKernel__rampN4L8d3__static_kernelrbf__0d298df9",
+      "cross_check_max_abs": 9.974659986866641e-18,
+      "entry": "GlobalAlignmentKernel",
+      "family": "DP_CUMSUM",
+      "golden_source": "legacy_cupy",
+      "ill_conditioned": false,
+      "keys": [
+        "gram",
+        "diag"
+      ],
+      "legacy_status": "ok",
+      "recommended_rtol": 1e-08
+    },
+    {
+      "case_id": "GlobalAlignmentKernel__gaussN3L1d3__static_kernelrbf__9ed03e7a",
+      "cross_check_max_abs": 2.7755575615628914e-17,
+      "entry": "GlobalAlignmentKernel",
+      "family": "DP_CUMSUM",
+      "golden_source": "legacy_cupy",
+      "ill_conditioned": false,
+      "keys": [
+        "gram",
+        "diag"
+      ],
+      "legacy_status": "ok",
+      "recommended_rtol": 1e-08
+    },
+    {
+      "case_id": "GlobalAlignmentKernel__gaussN1L6d3__static_kernelrbf__9a538092",
+      "cross_check_max_abs": 0.0,
+      "entry": "GlobalAlignmentKernel",
+      "family": "DP_CUMSUM",
+      "golden_source": "legacy_cupy",
+      "ill_conditioned": false,
+      "keys": [
+        "gram",
+        "diag"
+      ],
+      "legacy_status": "ok",
+      "recommended_rtol": 1e-08
+    },
+    {
+      "case_id": "GlobalAlignmentKernel__gaussN4L8d3_gaussYN3L8d3__static_kernelrbf__649c4abe",
+      "cross_check_max_abs": 6.88214269644119e-22,
+      "entry": "GlobalAlignmentKernel",
+      "family": "DP_CUMSUM",
+      "golden_source": "legacy_cupy",
+      "ill_conditioned": false,
+      "keys": [
+        "gram",
+        "diag",
+        "xy"
+      ],
+      "legacy_status": "ok",
+      "recommended_rtol": 1e-08
+    },
+    {
+      "case_id": "static__flatN5F12__kernelLinearKernel__b70966e5",
+      "cross_check_max_abs": 0.0,
+      "entry": "static",
+      "family": "EXACT_ALGEBRA",
+      "golden_source": "legacy_cupy",
+      "ill_conditioned": false,
+      "keys": [
+        "value"
+      ],
+      "legacy_status": "ok",
+      "recommended_rtol": 1e-10
+    },
+    {
+      "case_id": "static__flatN5F12_flatYN3F12__kernelLinearKernel__3a4ffd1b",
+      "cross_check_max_abs": 0.0,
+      "entry": "static",
+      "family": "EXACT_ALGEBRA",
+      "golden_source": "legacy_cupy",
+      "ill_conditioned": false,
+      "keys": [
+        "value"
+      ],
+      "legacy_status": "ok",
+      "recommended_rtol": 1e-10
+    },
+    {
+      "case_id": "static_diag__flatN5F12__kernelLinearKernel__d347b1c9",
+      "cross_check_max_abs": 1.7763568394002505e-15,
+      "entry": "static_diag",
+      "family": "EXACT_ALGEBRA",
+      "golden_source": "legacy_cupy",
+      "ill_conditioned": false,
+      "keys": [
+        "value"
+      ],
+      "legacy_status": "ok",
+      "recommended_rtol": 1e-10
+    },
+    {
+      "case_id": "static__largeN4L1d6__kernelLinearKernel__a6132941",
+      "cross_check_max_abs": 2.3283064365386963e-10,
+      "entry": "static",
+      "family": "EXACT_ALGEBRA",
+      "golden_source": "legacy_cupy",
+      "ill_conditioned": false,
+      "keys": [
+        "value"
+      ],
+      "legacy_status": "ok",
+      "recommended_rtol": 1e-10
+    },
+    {
+      "case_id": "static__flatN5F12__degree3_kernelPolynomialKernel__7ef50c54",
+      "cross_check_max_abs": 9.094947017729282e-13,
+      "entry": "static",
+      "family": "EXACT_ALGEBRA",
+      "golden_source": "legacy_cupy",
+      "ill_conditioned": false,
+      "keys": [
+        "value"
+      ],
+      "legacy_status": "ok",
+      "recommended_rtol": 1e-10
+    },
+    {
+      "case_id": "static__flatN5F12_flatYN3F12__degree3_kernelPolynomialKernel__8216b273",
+      "cross_check_max_abs": 1.4210854715202004e-14,
+      "entry": "static",
+      "family": "EXACT_ALGEBRA",
+      "golden_source": "legacy_cupy",
+      "ill_conditioned": false,
+      "keys": [
+        "value"
+      ],
+      "legacy_status": "ok",
+      "recommended_rtol": 1e-10
+    },
+    {
+      "case_id": "static_diag__flatN5F12__degree3_kernelPolynomialKernel__b45d9b50",
+      "cross_check_max_abs": 2.7284841053187847e-12,
+      "entry": "static_diag",
+      "family": "EXACT_ALGEBRA",
+      "golden_source": "legacy_cupy",
+      "ill_conditioned": false,
+      "keys": [
+        "value"
+      ],
+      "legacy_status": "ok",
+      "recommended_rtol": 1e-10
+    },
+    {
+      "case_id": "static__largeN4L1d6__degree3_kernelPolynomialKernel__fd2fad5c",
+      "cross_check_max_abs": 768.0,
+      "entry": "static",
+      "family": "EXACT_ALGEBRA",
+      "golden_source": "legacy_cupy",
+      "ill_conditioned": false,
+      "keys": [
+        "value"
+      ],
+      "legacy_status": "ok",
+      "recommended_rtol": 1e-10
+    },
+    {
+      "case_id": "static__flatN5F12__kernelRBFKernel__579d9340",
+      "cross_check_max_abs": 1.3010426069826053e-18,
+      "entry": "static",
+      "family": "DP_CUMSUM",
+      "golden_source": "legacy_cupy",
+      "ill_conditioned": false,
+      "keys": [
+        "value"
+      ],
+      "legacy_status": "ok",
+      "recommended_rtol": 1e-08
+    },
+    {
+      "case_id": "static__flatN5F12_flatYN3F12__kernelRBFKernel__8d2f6a3b",
+      "cross_check_max_abs": 2.42861286636753e-17,
+      "entry": "static",
+      "family": "DP_CUMSUM",
+      "golden_source": "legacy_cupy",
+      "ill_conditioned": false,
+      "keys": [
+        "value"
+      ],
+      "legacy_status": "ok",
+      "recommended_rtol": 1e-08
+    },
+    {
+      "case_id": "static_diag__flatN5F12__kernelRBFKernel__3af8805d",
+      "cross_check_max_abs": 1.7763568394002505e-15,
+      "entry": "static_diag",
+      "family": "DP_CUMSUM",
+      "golden_source": "legacy_cupy",
+      "ill_conditioned": false,
+      "keys": [
+        "value"
+      ],
+      "legacy_status": "ok",
+      "recommended_rtol": 1e-08
+    },
+    {
+      "case_id": "static__largeN4L1d6__kernelRBFKernel__eed8bd8a",
+      "cross_check_max_abs": 0.0,
+      "entry": "static",
+      "family": "DP_CUMSUM",
+      "golden_source": "legacy_cupy",
+      "ill_conditioned": false,
+      "keys": [
+        "value"
+      ],
+      "legacy_status": "ok",
+      "recommended_rtol": 1e-08
+    },
+    {
+      "case_id": "static__flatN5F12__kernelMatern12Kernel__6cfd6841",
+      "cross_check_max_abs": null,
+      "entry": "static",
+      "family": "DP_CUMSUM",
+      "golden_source": "numpy_oracle",
+      "ill_conditioned": false,
+      "keys": [
+        "value"
+      ],
+      "legacy_status": "broken",
+      "recommended_rtol": 1e-08
+    },
+    {
+      "case_id": "static__flatN5F12_flatYN3F12__kernelMatern12Kernel__cac78cca",
+      "cross_check_max_abs": null,
+      "entry": "static",
+      "family": "DP_CUMSUM",
+      "golden_source": "numpy_oracle",
+      "ill_conditioned": false,
+      "keys": [
+        "value"
+      ],
+      "legacy_status": "broken",
+      "recommended_rtol": 1e-08
+    },
+    {
+      "case_id": "static_diag__flatN5F12__kernelMatern12Kernel__90a56cee",
+      "cross_check_max_abs": null,
+      "entry": "static_diag",
+      "family": "DP_CUMSUM",
+      "golden_source": "numpy_oracle",
+      "ill_conditioned": false,
+      "keys": [
+        "value"
+      ],
+      "legacy_status": "broken",
+      "recommended_rtol": 1e-08
+    },
+    {
+      "case_id": "static__largeN4L1d6__kernelMatern12Kernel__1374cb34",
+      "cross_check_max_abs": null,
+      "entry": "static",
+      "family": "DP_CUMSUM",
+      "golden_source": "numpy_oracle",
+      "ill_conditioned": false,
+      "keys": [
+        "value"
+      ],
+      "legacy_status": "broken",
+      "recommended_rtol": 1e-08
+    },
+    {
+      "case_id": "static__flatN5F12__kernelMatern32Kernel__2897f96f",
+      "cross_check_max_abs": null,
+      "entry": "static",
+      "family": "DP_CUMSUM",
+      "golden_source": "numpy_oracle",
+      "ill_conditioned": false,
+      "keys": [
+        "value"
+      ],
+      "legacy_status": "broken",
+      "recommended_rtol": 1e-08
+    },
+    {
+      "case_id": "static__flatN5F12_flatYN3F12__kernelMatern32Kernel__90106627",
+      "cross_check_max_abs": null,
+      "entry": "static",
+      "family": "DP_CUMSUM",
+      "golden_source": "numpy_oracle",
+      "ill_conditioned": false,
+      "keys": [
+        "value"
+      ],
+      "legacy_status": "broken",
+      "recommended_rtol": 1e-08
+    },
+    {
+      "case_id": "static_diag__flatN5F12__kernelMatern32Kernel__d355e6fd",
+      "cross_check_max_abs": null,
+      "entry": "static_diag",
+      "family": "DP_CUMSUM",
+      "golden_source": "numpy_oracle",
+      "ill_conditioned": false,
+      "keys": [
+        "value"
+      ],
+      "legacy_status": "broken",
+      "recommended_rtol": 1e-08
+    },
+    {
+      "case_id": "static__largeN4L1d6__kernelMatern32Kernel__22766b27",
+      "cross_check_max_abs": null,
+      "entry": "static",
+      "family": "DP_CUMSUM",
+      "golden_source": "numpy_oracle",
+      "ill_conditioned": false,
+      "keys": [
+        "value"
+      ],
+      "legacy_status": "broken",
+      "recommended_rtol": 1e-08
+    },
+    {
+      "case_id": "static__flatN5F12__kernelMatern52Kernel__f32d4cd9",
+      "cross_check_max_abs": 5.000444502911705e-13,
+      "entry": "static",
+      "family": "DP_CUMSUM",
+      "golden_source": "legacy_cupy",
+      "ill_conditioned": false,
+      "keys": [
+        "value"
+      ],
+      "legacy_status": "ok",
+      "recommended_rtol": 1e-08
+    },
+    {
+      "case_id": "static__flatN5F12_flatYN3F12__kernelMatern52Kernel__5cc1a256",
+      "cross_check_max_abs": 3.469446951953614e-17,
+      "entry": "static",
+      "family": "DP_CUMSUM",
+      "golden_source": "legacy_cupy",
+      "ill_conditioned": false,
+      "keys": [
+        "value"
+      ],
+      "legacy_status": "ok",
+      "recommended_rtol": 1e-08
+    },
+    {
+      "case_id": "static_diag__flatN5F12__kernelMatern52Kernel__bf92ae7f",
+      "cross_check_max_abs": 2.886579864025407e-15,
+      "entry": "static_diag",
+      "family": "DP_CUMSUM",
+      "golden_source": "legacy_cupy",
+      "ill_conditioned": false,
+      "keys": [
+        "value"
+      ],
+      "legacy_status": "ok",
+      "recommended_rtol": 1e-08
+    },
+    {
+      "case_id": "static__largeN4L1d6__kernelMatern52Kernel__8a777f22",
+      "cross_check_max_abs": 5.000444502911705e-13,
+      "entry": "static",
+      "family": "DP_CUMSUM",
+      "golden_source": "legacy_cupy",
+      "ill_conditioned": false,
+      "keys": [
+        "value"
+      ],
+      "legacy_status": "ok",
+      "recommended_rtol": 1e-08
+    },
+    {
+      "case_id": "static__flatN5F12__kernelRationalQuadraticKernel__80785540",
+      "cross_check_max_abs": 5.551115123125783e-17,
+      "entry": "static",
+      "family": "DP_CUMSUM",
+      "golden_source": "legacy_cupy",
+      "ill_conditioned": false,
+      "keys": [
+        "value"
+      ],
+      "legacy_status": "ok",
+      "recommended_rtol": 1e-08
+    },
+    {
+      "case_id": "static__flatN5F12_flatYN3F12__kernelRationalQuadraticKernel__d38830f0",
+      "cross_check_max_abs": 5.551115123125783e-17,
+      "entry": "static",
+      "family": "DP_CUMSUM",
+      "golden_source": "legacy_cupy",
+      "ill_conditioned": false,
+      "keys": [
+        "value"
+      ],
+      "legacy_status": "ok",
+      "recommended_rtol": 1e-08
+    },
+    {
+      "case_id": "static_diag__flatN5F12__kernelRationalQuadraticKernel__4e5e3a24",
+      "cross_check_max_abs": 1.7763568394002505e-15,
+      "entry": "static_diag",
+      "family": "DP_CUMSUM",
+      "golden_source": "legacy_cupy",
+      "ill_conditioned": false,
+      "keys": [
+        "value"
+      ],
+      "legacy_status": "ok",
+      "recommended_rtol": 1e-08
+    },
+    {
+      "case_id": "static__largeN4L1d6__kernelRationalQuadraticKernel__ee770a7d",
+      "cross_check_max_abs": 1.0587911840678754e-22,
+      "entry": "static",
+      "family": "DP_CUMSUM",
+      "golden_source": "legacy_cupy",
+      "ill_conditioned": false,
+      "keys": [
+        "value"
+      ],
+      "legacy_status": "ok",
+      "recommended_rtol": 1e-08
+    }
+  ],
+  "created_utc": "2026-06-01T21:25:01.228261Z",
+  "cross_check_atol": 1e-09,
+  "cross_check_rtol": 1e-07,
+  "ill_conditioned_cases": [
+    "SignatureKernel__gaussN3L7d1__n_levels4_normalizeTrue_order3_static_kernellinear__73be08ed"
+  ],
+  "n_cases": 153,
+  "n_ill_conditioned": 1,
+  "n_legacy_sourced": 143,
+  "n_oracle_sourced": 10,
+  "worst_cross_check_max_abs": 768.0
+}

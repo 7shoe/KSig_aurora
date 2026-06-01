@@ -1,0 +1,107 @@
+{
+  "case_id": "SignatureKernel__gaussN4L8d3_gaussYN3L8d3__n_levels4_normalizeFalse_order1_static_kernellinear__99a2cd8c",
+  "created_utc": "2026-06-01T21:25:00.140007Z",
+  "cross_check_ok": true,
+  "cross_check_vs_oracle_max_abs": {
+    "diag": 3.637978807091713e-12,
+    "gram": 3.637978807091713e-12,
+    "xy": 7.389644451905042e-13
+  },
+  "cross_check_vs_oracle_max_rel": {
+    "diag": 6.946698104065938e-16,
+    "gram": 3.0937298012332865e-15,
+    "xy": 6.092294359815384e-15
+  },
+  "dtype_out": "float64",
+  "entry": "SignatureKernel",
+  "golden_source": "legacy_cupy",
+  "ill_conditioned": false,
+  "inputs": {
+    "X": {
+      "builder": "gaussian",
+      "params": {
+        "L": 8,
+        "d": 3,
+        "n": 4,
+        "seed": 0
+      },
+      "shape": [
+        4,
+        8,
+        3
+      ]
+    },
+    "Y": {
+      "builder": "gaussian",
+      "params": {
+        "L": 8,
+        "d": 3,
+        "n": 3,
+        "seed": 10
+      },
+      "shape": [
+        3,
+        8,
+        3
+      ]
+    }
+  },
+  "kwargs": {
+    "n_levels": 4,
+    "normalize": false,
+    "order": 1,
+    "static_kernel": "linear"
+  },
+  "legacy_error": null,
+  "legacy_status": "ok",
+  "recommended_rtol": 1e-08,
+  "semantic_tags": [
+    "signature",
+    "order1",
+    "unnorm",
+    "linear",
+    "xy"
+  ],
+  "tolerance_class": "DP_CUMSUM",
+  "value_stats": {
+    "diag": {
+      "max": 18141.4713019597,
+      "mean": 9574.478635125419,
+      "min": 1963.871226620448,
+      "n_nonfinite": 0,
+      "shape": [
+        4
+      ]
+    },
+    "gram": {
+      "max": 18141.4713019597,
+      "mean": 3096.760804314994,
+      "min": -230.64082937651125,
+      "n_nonfinite": 0,
+      "shape": [
+        4,
+        4
+      ]
+    },
+    "xy": {
+      "max": 620.424270294916,
+      "mean": 137.7609859643426,
+      "min": -283.3031054871533,
+      "n_nonfinite": 0,
+      "shape": [
+        4,
+        3
+      ]
+    }
+  },
+  "versions": {
+    "cuda_runtime": 12090,
+    "cupy": "14.1.0",
+    "gpu_name": "NVIDIA H100 NVL",
+    "numba": "0.65.1",
+    "numpy": "2.2.6",
+    "python": "3.10.20",
+    "scipy": "1.15.3",
+    "sklearn": "1.7.2"
+  }
+}

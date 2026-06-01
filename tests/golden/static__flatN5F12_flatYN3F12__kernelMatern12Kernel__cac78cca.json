@@ -1,0 +1,73 @@
+{
+  "case_id": "static__flatN5F12_flatYN3F12__kernelMatern12Kernel__cac78cca",
+  "created_utc": "2026-06-01T21:25:01.198656Z",
+  "cross_check_ok": true,
+  "cross_check_vs_oracle_max_abs": {},
+  "cross_check_vs_oracle_max_rel": {},
+  "dtype_out": "float64",
+  "entry": "static",
+  "golden_source": "numpy_oracle",
+  "ill_conditioned": false,
+  "inputs": {
+    "X": {
+      "builder": "flat_2d",
+      "params": {
+        "L": 4,
+        "d": 3,
+        "n": 5,
+        "seed": 0
+      },
+      "shape": [
+        5,
+        12
+      ]
+    },
+    "Y": {
+      "builder": "flat_2d",
+      "params": {
+        "L": 4,
+        "d": 3,
+        "n": 3,
+        "seed": 7
+      },
+      "shape": [
+        3,
+        12
+      ]
+    }
+  },
+  "kwargs": {
+    "kernel": "Matern12Kernel"
+  },
+  "legacy_error": null,
+  "legacy_status": "broken",
+  "recommended_rtol": 1e-08,
+  "semantic_tags": [
+    "static",
+    "xy",
+    "Matern12Kernel"
+  ],
+  "tolerance_class": "DP_CUMSUM",
+  "value_stats": {
+    "value": {
+      "max": 0.06625134138711349,
+      "mean": 0.02056211197298219,
+      "min": 0.002007169834900726,
+      "n_nonfinite": 0,
+      "shape": [
+        5,
+        3
+      ]
+    }
+  },
+  "versions": {
+    "cuda_runtime": 12090,
+    "cupy": "14.1.0",
+    "gpu_name": "NVIDIA H100 NVL",
+    "numba": "0.65.1",
+    "numpy": "2.2.6",
+    "python": "3.10.20",
+    "scipy": "1.15.3",
+    "sklearn": "1.7.2"
+  }
+}

@@ -1,0 +1,80 @@
+{
+  "case_id": "SignatureKernel__gaussN3L7d1__n_levels4_normalizeFalse_order3_static_kernellinear__6690fc09",
+  "created_utc": "2026-06-01T21:25:00.322106Z",
+  "cross_check_ok": true,
+  "cross_check_vs_oracle_max_abs": {
+    "diag": 1.4779288903810084e-12,
+    "gram": 1.4779288903810084e-12
+  },
+  "cross_check_vs_oracle_max_rel": {
+    "diag": 7.326369569916744e-15,
+    "gram": 8.74909026608086e-15
+  },
+  "dtype_out": "float64",
+  "entry": "SignatureKernel",
+  "golden_source": "legacy_cupy",
+  "ill_conditioned": false,
+  "inputs": {
+    "X": {
+      "builder": "gaussian",
+      "params": {
+        "L": 7,
+        "d": 1,
+        "n": 3,
+        "seed": 4
+      },
+      "shape": [
+        3,
+        7,
+        1
+      ]
+    }
+  },
+  "kwargs": {
+    "n_levels": 4,
+    "normalize": false,
+    "order": 3,
+    "static_kernel": "linear"
+  },
+  "legacy_error": null,
+  "legacy_status": "ok",
+  "recommended_rtol": 1e-08,
+  "semantic_tags": [
+    "signature",
+    "order3",
+    "unnorm",
+    "linear"
+  ],
+  "tolerance_class": "DP_CUMSUM",
+  "value_stats": {
+    "diag": {
+      "max": 596.9654249493478,
+      "mean": 201.44440929904275,
+      "min": 2.397358191999536,
+      "n_nonfinite": 0,
+      "shape": [
+        3
+      ]
+    },
+    "gram": {
+      "max": 596.9654249493478,
+      "mean": 85.28365555035799,
+      "min": 2.397358191999536,
+      "n_nonfinite": 0,
+      "shape": [
+        3,
+        3
+      ]
+    }
+  },
+  "versions": {
+    "cuda_runtime": 12090,
+    "cupy": "14.1.0",
+    "gpu_name": "NVIDIA H100 NVL",
+    "numba": "0.65.1",
+    "numpy": "2.2.6",
+    "python": "3.10.20",
+    "scipy": "1.15.3",
+    "sklearn": "1.7.2"
+  }
+}

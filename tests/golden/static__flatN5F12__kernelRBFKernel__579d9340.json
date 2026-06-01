@@ -1,0 +1,64 @@
+{
+  "case_id": "static__flatN5F12__kernelRBFKernel__579d9340",
+  "created_utc": "2026-06-01T21:25:01.188285Z",
+  "cross_check_ok": true,
+  "cross_check_vs_oracle_max_abs": {
+    "value": 1.3010426069826053e-18
+  },
+  "cross_check_vs_oracle_max_rel": {
+    "value": 1.7167233772417609e-15
+  },
+  "dtype_out": "float64",
+  "entry": "static",
+  "golden_source": "legacy_cupy",
+  "ill_conditioned": false,
+  "inputs": {
+    "X": {
+      "builder": "flat_2d",
+      "params": {
+        "L": 4,
+        "d": 3,
+        "n": 5,
+        "seed": 0
+      },
+      "shape": [
+        5,
+        12
+      ]
+    }
+  },
+  "kwargs": {
+    "kernel": "RBFKernel"
+  },
+  "legacy_error": null,
+  "legacy_status": "ok",
+  "recommended_rtol": 1e-08,
+  "semantic_tags": [
+    "static",
+    "gram",
+    "RBFKernel"
+  ],
+  "tolerance_class": "DP_CUMSUM",
+  "value_stats": {
+    "value": {
+      "max": 1.0,
+      "mean": 0.2017750426009593,
+      "min": 2.1684301912340326e-09,
+      "n_nonfinite": 0,
+      "shape": [
+        5,
+        5
+      ]
+    }
+  },
+  "versions": {
+    "cuda_runtime": 12090,
+    "cupy": "14.1.0",
+    "gpu_name": "NVIDIA H100 NVL",
+    "numba": "0.65.1",
+    "numpy": "2.2.6",
+    "python": "3.10.20",
+    "scipy": "1.15.3",
+    "sklearn": "1.7.2"
+  }
+}
