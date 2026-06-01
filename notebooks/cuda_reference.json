@@ -1,0 +1,405 @@
+{
+  "meta": {
+    "gpu": "NVIDIA H100 NVL",
+    "backend": "legacy_cupy",
+    "device": "cuda",
+    "versions": {
+      "numpy": "2.2.6",
+      "cupy": "14.1.0",
+      "numba": "0.65.1",
+      "torch": null,
+      "ksig": null
+    },
+    "created_utc": "2026-06-01T22:13:53"
+  },
+  "signature_kernel": {
+    "meta": {
+      "gpu": "NVIDIA H100 NVL",
+      "backend": "legacy_cupy",
+      "device": "cuda",
+      "versions": {
+        "numpy": "2.2.6",
+        "cupy": "14.1.0",
+        "numba": "0.65.1",
+        "torch": null,
+        "ksig": null
+      },
+      "created_utc": "2026-06-01T22:13:53"
+    },
+    "demo": {
+      "input": "simulate(16, 20, 3, seed=0)",
+      "kwargs": "n_levels=4, order=2, normalize=True, static=RBF",
+      "gram_shape": [
+        16,
+        16
+      ],
+      "gram_block": [
+        [
+          1.0,
+          0.2291,
+          0.2158
+        ],
+        [
+          0.2291,
+          1.0,
+          0.305
+        ],
+        [
+          0.2158,
+          0.305,
+          1.0
+        ]
+      ],
+      "diag_mean": 1.0
+    },
+    "scaling": {
+      "axis": "sequence length L  (n=32, d=3, n_levels=4, order=2)",
+      "x": [
+        8,
+        16,
+        32,
+        64,
+        128
+      ],
+      "seconds": [
+        0.002166,
+        0.002159,
+        0.002641,
+        0.006069,
+        0.017615
+      ],
+      "pairs_per_sec": [
+        472805.2,
+        474283.3,
+        387666.6,
+        168732.6,
+        58132.3
+      ]
+    }
+  },
+  "signature_pde_kernel": {
+    "meta": {
+      "gpu": "NVIDIA H100 NVL",
+      "backend": "legacy_cupy",
+      "device": "cuda",
+      "versions": {
+        "numpy": "2.2.6",
+        "cupy": "14.1.0",
+        "numba": "0.65.1",
+        "torch": null,
+        "ksig": null
+      },
+      "created_utc": "2026-06-01T22:13:53"
+    },
+    "demo": {
+      "input": "simulate(16, 20, 3, seed=0)",
+      "kwargs": "difference=True, normalize=True, static=RBF",
+      "gram_shape": [
+        16,
+        16
+      ],
+      "gram_block": [
+        [
+          1.0,
+          0.2979,
+          0.4118
+        ],
+        [
+          0.2979,
+          1.0,
+          0.3314
+        ],
+        [
+          0.4118,
+          0.3314,
+          1.0
+        ]
+      ],
+      "diag_mean": 1.0
+    },
+    "scaling": {
+      "axis": "sequence length L  (n=32, d=3)",
+      "x": [
+        8,
+        16,
+        32,
+        64,
+        128
+      ],
+      "seconds": [
+        0.001006,
+        0.00098,
+        0.000967,
+        0.001032,
+        0.001789
+      ],
+      "pairs_per_sec": [
+        1017621.6,
+        1044528.2,
+        1058423.1,
+        991779.1,
+        572524.1
+      ]
+    }
+  },
+  "global_alignment_kernel": {
+    "meta": {
+      "gpu": "NVIDIA H100 NVL",
+      "backend": "legacy_cupy",
+      "device": "cuda",
+      "versions": {
+        "numpy": "2.2.6",
+        "cupy": "14.1.0",
+        "numba": "0.65.1",
+        "torch": null,
+        "ksig": null
+      },
+      "created_utc": "2026-06-01T22:13:53"
+    },
+    "demo": {
+      "input": "simulate(16, 8, 3, seed=0)",
+      "kwargs": "static=RBF(bandwidth=5.0)  (normalized, log-space)",
+      "gram_shape": [
+        16,
+        16
+      ],
+      "gram_block": [
+        [
+          1.0,
+          0.5575,
+          0.535
+        ],
+        [
+          0.5575,
+          1.0,
+          0.7601
+        ],
+        [
+          0.535,
+          0.7601,
+          1.0
+        ]
+      ],
+      "diag_mean": 1.0
+    },
+    "scaling": {
+      "axis": "sequence length L  (n=32, d=3)",
+      "x": [
+        8,
+        16,
+        32,
+        64,
+        128
+      ],
+      "seconds": [
+        0.00098,
+        0.000964,
+        0.000969,
+        0.001101,
+        0.002212
+      ],
+      "pairs_per_sec": [
+        1044389.8,
+        1062157.2,
+        1056348.4,
+        930326.4,
+        462869.2
+      ]
+    }
+  },
+  "rfsf_features": {
+    "meta": {
+      "gpu": "NVIDIA H100 NVL",
+      "backend": "legacy_cupy",
+      "device": "cuda",
+      "versions": {
+        "numpy": "2.2.6",
+        "cupy": "14.1.0",
+        "numba": "0.65.1",
+        "torch": null,
+        "ksig": null
+      },
+      "created_utc": "2026-06-01T22:13:53"
+    },
+    "demo": {
+      "input": "simulate(24, 20, 3, seed=0)",
+      "kwargs": "n_levels=4, RFF(n_components=100), TRP(rank=1), normalize=True",
+      "gram_shape": [
+        24,
+        24
+      ],
+      "feature_shape": [
+        24,
+        401
+      ],
+      "diag_mean": 1.0,
+      "rel_err_vs_exact": 0.1323,
+      "convergence": [
+        {
+          "n_components": 50,
+          "rel_err": 0.1891
+        },
+        {
+          "n_components": 100,
+          "rel_err": 0.1323
+        },
+        {
+          "n_components": 250,
+          "rel_err": 0.0821
+        },
+        {
+          "n_components": 500,
+          "rel_err": 0.0582
+        }
+      ],
+      "note": "RNG-dependent: exact element values differ across backends, but diag==1, symmetry, and rel_err (which shrinks with n_components) are portable."
+    },
+    "scaling": {
+      "axis": "n_samples N  (L=50, d=5, n_components=100)",
+      "x": [
+        64,
+        128,
+        256,
+        512,
+        1024
+      ],
+      "seconds": [
+        0.00264,
+        0.002655,
+        0.002618,
+        0.002744,
+        0.004847
+      ],
+      "pairs_per_sec": [
+        1551417.5,
+        6170008.0,
+        25034130.5,
+        95522109.7,
+        216326391.2
+      ]
+    }
+  },
+  "low_rank_signature": {
+    "meta": {
+      "gpu": "NVIDIA H100 NVL",
+      "backend": "legacy_cupy",
+      "device": "cuda",
+      "versions": {
+        "numpy": "2.2.6",
+        "cupy": "14.1.0",
+        "numba": "0.65.1",
+        "torch": null,
+        "ksig": null
+      },
+      "created_utc": "2026-06-01T22:13:53"
+    },
+    "demo": {
+      "input": "simulate(24, 20, 3, seed=0)",
+      "kwargs": "n_levels=4, TRP(n_components=100, rank=1), normalize=True",
+      "gram_shape": [
+        24,
+        24
+      ],
+      "feature_shape": [
+        24,
+        401
+      ],
+      "diag_mean": 1.0,
+      "rel_err_vs_exact": 0.3997,
+      "convergence": [
+        {
+          "n_components": 50,
+          "rel_err": 0.4242
+        },
+        {
+          "n_components": 100,
+          "rel_err": 0.3997
+        },
+        {
+          "n_components": 250,
+          "rel_err": 0.3811
+        },
+        {
+          "n_components": 500,
+          "rel_err": 0.3795
+        }
+      ],
+      "note": "Low-rank random projection of the signature; same portability caveat as RFSF."
+    },
+    "scaling": {
+      "axis": "n_samples N  (L=50, d=5, n_components=100)",
+      "x": [
+        64,
+        128,
+        256,
+        512,
+        1024
+      ],
+      "seconds": [
+        0.001784,
+        0.001784,
+        0.00177,
+        0.001869,
+        0.003014
+      ],
+      "pairs_per_sec": [
+        2295898.7,
+        9185865.4,
+        37019926.5,
+        140268500.6,
+        347923492.9
+      ]
+    }
+  },
+  "random_warping_series": {
+    "meta": {
+      "gpu": "NVIDIA H100 NVL",
+      "backend": "legacy_cupy",
+      "device": "cuda",
+      "versions": {
+        "numpy": "2.2.6",
+        "cupy": "14.1.0",
+        "numba": "0.65.1",
+        "torch": null,
+        "ksig": null
+      },
+      "created_utc": "2026-06-01T22:13:53"
+    },
+    "demo": {
+      "input": "simulate(24, 20, 3, seed=0)",
+      "kwargs": "n_components=100, stdev=1.0, max_warp=32, normalize=True",
+      "gram_shape": [
+        24,
+        24
+      ],
+      "diag_mean": 1.0,
+      "symmetric_max_abs": 0.0,
+      "min_eig": 0.000599,
+      "note": "DTW-based, RNG-dependent: element values differ across backends; diag==1, symmetry and PSD-ness are the portable invariants."
+    },
+    "scaling": {
+      "axis": "n_samples N  (L=50, d=5, n_components=100)",
+      "x": [
+        64,
+        128,
+        256,
+        512,
+        1024
+      ],
+      "seconds": [
+        0.0013,
+        0.001586,
+        0.00219,
+        0.003521,
+        0.006339
+      ],
+      "pairs_per_sec": [
+        3150910.0,
+        10332299.3,
+        29923639.2,
+        74447750.4,
+        165421328.1
+      ]
+    }
+  }
+}

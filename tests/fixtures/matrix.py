@@ -169,9 +169,25 @@ def all_cases() -> List[Case]:
 
 
 if __name__ == "__main__":
+    import sys
+
     cs = all_cases()
-    print(f"{len(cs)} cases total")
-    from collections import Counter
-    by_entry = Counter(c.entry for c in cs)
-    for k, v in by_entry.items():
-        print(f"  {k:24s} {v}")
+    args = sys.argv[1:]
+
+    # `--list [SUBSTR]` enumerates the case_ids -- i.e. the exact `-k` tokens the
+    # compare/oracle tests are parametrized by -- optionally filtered by a
+    # case-insensitive substring.  Needs only NumPy, so it runs on the port box
+    # (no CuPy/ksig).  With no args: a per-entry count summary.
+    if args and args[0] == "--list":
+        needle = args[1].lower() if len(args) > 1 else ""
+        hits = [c.case_id for c in cs if needle in c.case_id.lower()]
+        for cid in hits:
+            print(cid)
+        tail = f" matching {needle!r}" if needle else ""
+        print(f"# {len(hits)}/{len(cs)} cases{tail}", file=sys.stderr)
+    else:
+        print(f"{len(cs)} cases total")
+        from collections import Counter
+        by_entry = Counter(c.entry for c in cs)
+        for k, v in by_entry.items():
+            print(f"  {k:24s} {v}")

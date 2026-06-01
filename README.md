@@ -85,6 +85,79 @@ Alternatively, if you are still unable to build `cupy`, you may be able to downl
 
 Finally, to make use of the functionality of the provided models under `ksig.models`, i.e. `PrecomputedKernelSVC` and `PrecomputedFeatureLinSVC`, you also need to install the `cuml` library. This can only be manually installed from [`RAPIDS`](https://docs.rapids.ai/install) repository. Here, scroll down to the section titled "Install RAPIDS" and select the `pip` install method, your CUDA version, your Python version, then select "Choose Specific Packages" and unselect every package besides `cuml`, and copy-paste the given command into the terminal where the `conda` environment is activated.
   
+## Testing & validating the port
+
+> **For anyone — human or coding agent — changing an implementation and needing to know whether it still matches the reference.** The machine the port is developed on has **no CuPy / Numba / cuML**, and it doesn't need them: the reference values are **frozen to disk** and every cross-check is **pure NumPy**. Correctness is decidable from this repo alone — the code under `ksig/` plus the cases under `tests/`.
+
+The full design is in **[`tests/TEST_PLAN.md`](tests/TEST_PLAN.md)**; the essential idea is a **two-stage** suite:
+
+- **Stage 1 — freeze (already done, on an NVIDIA box).** The legacy CuPy/Numba `ksig` was run once over a deterministic fixture grid and its outputs committed to `tests/golden/*.npz` (+ a `.json` provenance sidecar) — **153 cases**. At freeze time each value was also **cross-checked against an independent brute-force NumPy oracle** (`tests/oracles/`). Where the legacy code is *known-broken* (see below), the golden was sourced from the oracle and tagged `legacy_status="broken"`.
+- **Stage 2 — compare (what you run).** The *current* `ksig` is run over the **same** fixtures and asserted equal to the golden under a per-family tolerance (`tests/tolerances.py`). A new implementation is therefore correct **iff** it reproduces the frozen golden and/or agrees with the NumPy oracle — no GPU, no CuPy required.
+
+### Run the whole suite
+```bash
+pytest            # everything under tests/ (configured in pytest.ini)
+pytest -q         # quiet
+```
+A clean run ends with a short **“suite notes”** summary. On the legacy backend some `xfailed` are expected — the two known legacy bugs (below) the **port must fix**; once fixed they flip to `xpassed` and should be promoted to required-pass.
+
+The suite is split by **marker** so a run can be scoped to what a given box can support:
+
+| Marker | Selects | Needs |
+|---|---|---|
+| `oracle` | golden **vs** the NumPy oracle — validates the ground truth itself | **NumPy only** — no `ksig`, no GPU |
+| `unit` | low-level primitives & static kernels vs closed-form NumPy | the `ksig` under test (CPU is fine) |
+| `golden` | the current `ksig` vs the frozen `.npz` | the `ksig` under test |
+| `xpu` / `sycl` | Aurora XPU / built SYCL paths | Aurora hardware |
+| `slow` / `stress` | large / extreme shapes | — |
+
+```bash
+pytest -m oracle               # pure-NumPy: prove the golden is trustworthy (runs anywhere)
+pytest -m "unit and not slow"  # fast inner loop while porting ksig/utils.py & static kernels
+pytest -m golden               # compare the port against every frozen artifact
+```
+
+### Selectively test one method against the gold label
+
+The compare/oracle tests are **parametrized by `case_id`**, and the `case_id` encodes the method, the static kernel, the shape, and the kwargs — so `pytest -k` targets one method (or one exact case) precisely. Enumerate the available tokens (NumPy only — no backend needed) with:
+
+```bash
+python -m tests.fixtures.matrix --list            # every case_id (= every -k token)
+python -m tests.fixtures.matrix --list Matern12   # filter to a method (case-insensitive)
+```
+
+Then drive a focused comparison:
+
+```bash
+# A public kernel vs its frozen golden — the "did my port reproduce the reference?" check:
+pytest tests/test_compare_golden.py -k SignatureKernel
+pytest tests/test_compare_golden.py -k "SignatureKernel and order2 and normalizeTrue"
+pytest tests/test_compare_golden.py -k Matern12Kernel          # a known-broken-on-legacy kernel
+
+# Same method, but against the hardware-independent NumPy oracle (no .npz, no CuPy):
+pytest tests/test_golden_vs_oracle.py -k SignaturePDEKernel
+
+# A DP algorithm checked at the algorithm level — feed an identical static-kernel
+# matrix M and compare to the brute-force recurrence. The highest-risk port surface
+# (the Numba kernels become torch wavefronts / SYCL); needs no golden:
+pytest tests/test_algorithms_dp.py -k sigpde
+pytest tests/test_algorithms_dp.py -k "gak or rws or dtw"
+
+# A single primitive or static kernel vs its closed-form NumPy oracle:
+pytest tests/unit/test_utils_tensor_algebra.py -k multi_cumsum
+pytest tests/unit/test_static_kernels.py -k RBFKernel
+```
+
+On failure the comparison **pinpoints** the divergence — fixture id, family/dtype/device, the count of out-of-tolerance elements, and the *worst element’s coordinate and values* — so a red test names **which input shape / dtype broke**, not merely that something did.
+
+### The two legacy bugs the port must fix
+Pinned as `xfail` on the legacy backend and **required-pass on the port**, so they can never silently regress:
+1. **`Matern12Kernel` / `Matern32Kernel`** — a spurious `self` in `utils.euclid_dist` shifts the arguments. Drive it with `pytest -k "Matern12Kernel or Matern32Kernel"`.
+2. **SigPDE on `L=1` with `difference=True`** — the legacy Numba kernel launches a 0-thread grid; the torch wavefront must handle `L=1`. Drive it with `pytest tests/test_algorithms_dp.py -k sigpde`.
+
+### Visual demos — [`notebooks/`](notebooks/)
+A playful, visual companion to the suite: six notebooks (one per feature — signature kernel, SigPDE, GAK, RFSF, low-rank, RWS) that compute each kernel on simple deterministic data and show the **NVIDIA-CUDA reference output** in the markdown above each cell, then plot a tunable **scaling curve** — 🟩 green = the frozen CUDA reference (measured on an H100), 🟦 blue = live on this machine, 🟧 orange = the SYCL fast-path (only drawn when a `ksig._sycl` build is present). Run them on Aurora after the port lands for at-a-glance feedback on correctness and throughput. See [`notebooks/README.md`](notebooks/README.md).
+
 ## More Examples
 
 ### Scaling to large datasets
