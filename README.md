@@ -1,8 +1,19 @@
-# <p align='center'> K<sub>Sig</sub> </p>
-## <p align='center'> GPU-accelerated computation of popular time series kernels </p>
-A [scikit-learn](https://github.com/scikit-learn/scikit-learn) compatible Python package, which provides a GPU-accelerated implementation for most powerful and popular time series kernels and features using [CuPy](https://github.com/cupy/cupy).
+# <p align='center'> K<sub>Sig</sub>-Aurora </p>
+## <p align='center'> A torch-native, multi-vendor GPU port of K<sub>Sig</sub> </p>
 
-> **GPU Acceleration:** All kernel computations are performed on the GPU via [CuPy](https://github.com/cupy/cupy), providing major speedups on modern NVIDIA hardware.
+> ### ⚠️ This is a fork, not upstream K<sub>Sig</sub>
+>
+> **`KSig_aurora` is a work-in-progress effort to modernize and re-target [`KSig`](https://github.com/tgcsaba/ksig).** Upstream `KSig` is GPU-accelerated via [CuPy](https://github.com/cupy/cupy) and hand-written Numba-CUDA kernels, both of which are **NVIDIA-only** and, at this point, built against an increasingly **outdated NumPy/PyTorch stack**. This fork pursues three goals:
+>
+> 1. **Refresh NumPy/PyTorch compatibility** — bring the library up to date with current NumPy and PyTorch releases so it installs and runs on modern environments.
+> 2. **Make it torch-native** — replace the CuPy + Numba-CUDA backend with a single **PyTorch-native** implementation (the three dynamic-programming kernels rewritten as vectorized torch "wavefront" recurrences), so the same code runs across **NVIDIA CUDA, Intel XPU, and Apple MPS** instead of being locked to NVIDIA.
+> 3. **Accelerate on Aurora** — provide an **optional native SYCL fast-path** targeting the **Intel Data Center GPU Max 1550 ("Ponte Vecchio")** GPUs on the [Aurora](https://www.alcf.anl.gov/aurora) supercomputer, ideally delivering additional speed-up on those compute nodes.
+>
+> 📄 **The full implementation plan lives in [`docs/TORCH_PORT.md`](docs/TORCH_PORT.md).** Until the port lands, the API documentation below still describes the original CuPy-based `KSig`.
+
+---
+
+A [scikit-learn](https://github.com/scikit-learn/scikit-learn) compatible Python package, which provides a GPU-accelerated implementation for most powerful and popular time series kernels and features.
 
 The time series kernels included in this package are:
 - [Signature Kernel using dynamic programming](https://jmlr.org/papers/volume20/16-314/16-314.pdf), which computes truncated signature kernels exactly, see Algorithms 3 and 6;
