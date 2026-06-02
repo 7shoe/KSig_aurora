@@ -25,11 +25,20 @@ def _flatten(X: np.ndarray) -> np.ndarray:
 
 
 def _sq_dist(X, Y):
+    is_self = Y is None
     X = _flatten(X)
-    Y = _flatten(X if Y is None else Y)
+    Y = _flatten(X if is_self else Y)
     d2 = (np.sum(X * X, axis=1)[:, None] + np.sum(Y * Y, axis=1)[None, :]
           - 2.0 * X @ Y.T)
-    return np.maximum(d2, 0.0)   # clamp cancellation, matches robust behavior
+    d2 = np.maximum(d2, 0.0)   # clamp cancellation, matches robust behavior
+    if is_self:
+        # The self-distance diagonal is exactly zero; BLAS `X @ X.T` vs
+        # `sum(X*X)` accumulate in different orders and leave a ~1e-15 residual
+        # there. Harmless for exp(-d^2) kernels but `sqrt` amplifies it to
+        # ~1e-7, which would put the Matern12/32 unit diagonal off the textbook
+        # value of 1. Pin it to zero (matches `ksig.utils.squared_euclid_dist`).
+        np.fill_diagonal(d2, 0.0)
+    return d2
 
 
 def _dist(X, Y):

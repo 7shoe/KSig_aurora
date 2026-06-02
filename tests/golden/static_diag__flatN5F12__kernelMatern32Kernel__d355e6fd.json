@@ -38,8 +38,8 @@
   "value_stats": {
     "value": {
       "max": 1.0,
-      "mean": 0.9999999999999973,
-      "min": 0.9999999999999946,
+      "mean": 1.0,
+      "min": 1.0,
       "n_nonfinite": 0,
       "shape": [
         5
