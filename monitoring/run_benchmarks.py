@@ -12,6 +12,7 @@ run must not read as "covered everything".
 from __future__ import annotations
 
 import argparse
+import os
 import sys
 
 import numpy as np
@@ -36,6 +37,24 @@ def _backend_device():
         return "torch", "cpu"
     except Exception:
         return "unknown", "cpu"
+
+
+def _sycl_variant(device):
+    """Tag distinguishing the SYCL fast-path from the torch wavefront, so the
+    run-twice acceptance comparison (SYCL_HANDOFF.md Sec. 7) writes to distinct
+    files instead of overwriting. Returns "sycl" only when SYCL would actually
+    engage for this run (XPU + ext built + KSIG_USE_SYCL not disabled), else
+    "torch"."""
+    if device != "xpu":
+        return "torch"
+    try:
+        from ksig.algorithms import _sycl_enabled
+        from ksig._sycl import loader
+        if _sycl_enabled() and loader.available():
+            return "sycl"
+    except Exception:
+        pass
+    return "torch"
 
 
 def _to_backend(a):
@@ -109,9 +128,10 @@ def main(argv=None):
               f"{timing['median_s']*1e3:8.2f} ms  "
               f"peak={(timing['peak_mem_bytes'] or 0)/1e6:7.1f} MB")
 
-    stem = f"{backend}_{device}_{args.tier}"
+    variant = _sycl_variant(device)
+    stem = f"{backend}_{device}_{variant}_{args.tier}"
     jsonl, csv_path = record.write(rows, args.out, stem)
-    print(f"\nTier '{args.tier}' on {backend}/{device}: "
+    print(f"\nTier '{args.tier}' on {backend}/{device} [{variant}]: "
           f"{n_run} run, {n_skip} skipped (over budget).")
     print(f"  -> {jsonl}\n  -> {csv_path}")
     return 0
