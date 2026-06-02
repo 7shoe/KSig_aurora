@@ -16,10 +16,18 @@ setup(
     long_description=readme,
     long_description_content_type='text/markdown',
     license='Apache License 2.0',
-    keywords='machine-learning signature sequence time-series kernel support-vector-machines cupy sklearn',
+    keywords='machine-learning signature sequence time-series kernel support-vector-machines torch sklearn',
     url='https://github.com/tgcsaba/KSig',
     packages=find_packages(),
-    install_requires=['numpy==1.24.4', 'scikit-learn>=1.3.2', 'cupy>=12.2.0', 'tqdm==4.66.1'],
+    install_requires=['numpy>=1.24', 'scikit-learn>=1.3.2', 'torch>=2.5', 'tqdm>=4.66.1'],
+    extras_require={
+        # cuML provides a CUDA LinearSVC; NVIDIA-only, optional (sklearn is the
+        # portable fallback otherwise).
+        'cuda-svm': ['cuml'],
+        # Native SYCL fast-path for the DP kernels on Aurora XPU; built JIT via
+        # torch.utils.cpp_extension (icpx -fsycl), no extra PyPI dependency.
+        'xpu-sycl': [],
+    },
     python_requires='>=3.9',
     classifiers=[
         'Audience :: Developers',
