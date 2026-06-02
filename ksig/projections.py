@@ -1,7 +1,7 @@
 "Low-dimensional (random) projection operations for tensor contraction."
 
-import cupy as cp
 import numpy as np
+import torch
 import warnings
 
 from abc import ABCMeta, abstractmethod
@@ -11,6 +11,7 @@ from typing import Optional, Tuple
 
 from . import utils
 from .utils import ArrayOnGPU, ArrayOnCPUOrGPU, RandomStateOrSeed
+from .torch_backend import as_index, as_tensor, to_numpy
 
 
 # ------------------------------------------------------------------------------
@@ -152,15 +153,15 @@ class RandomProjection(BaseEstimator, TransformerMixin, metaclass=ABCMeta):
     """
     check_is_fitted(self)
     self._validate_data(X, Y=Y)
-    # Move data to GPU if not there already.
-    X = cp.asarray(X)
-    Y = cp.asarray(Y) if Y is not None else None
+    # Move data to the compute device if not there already.
+    X = as_tensor(X)
+    Y = as_tensor(Y) if Y is not None else None
     if Y is not None:
       proj = self._project_outer_prod(X, Y)
     else:
       proj = self._project(X)
     if not return_on_gpu:
-      proj = cp.asnumpy(proj)
+      proj = to_numpy(proj)
     return proj
 
   def __call__(self, X: ArrayOnCPUOrGPU, Y: Optional[ArrayOnCPUOrGPU] = None,
@@ -211,7 +212,7 @@ class GaussianRandomProjection(RandomProjection):
     """
     self.components_ = self.random_state.normal(
       size=[self.n_components, self.n_features_])
-    self.scaling_ = 1. / cp.sqrt(self.n_components)
+    self.scaling_ = 1. / np.sqrt(self.n_components)
 
   def _project(self, X: ArrayOnGPU) -> ArrayOnGPU:
     """Projects the input array, called by `transform`.
@@ -255,7 +256,7 @@ class SubsamplingProjection(RandomProjection):
     """
     self.sampled_idx_ = self.random_state.choice(
       self.n_features_, size=self.n_components, replace=False)
-    self.scaling_ = cp.sqrt(self.n_features_ / self.n_components)
+    self.scaling_ = np.sqrt(self.n_features_ / self.n_components)
 
   def _project(self, X : ArrayOnGPU) -> ArrayOnGPU:
     """Projects the input array, called by `transform`.
@@ -266,7 +267,8 @@ class SubsamplingProjection(RandomProjection):
     Returns:
       The projected outer-product array on GPU.
     """
-    return self.scaling_ * cp.take(X, self.sampled_idx_, axis=-1)
+    return self.scaling_ * torch.index_select(
+      X, -1, as_index(self.sampled_idx_, device=X.device))
 
   def _project_outer_prod(self, X: ArrayOnGPU, Y: ArrayOnGPU) -> ArrayOnGPU:
     """Projects the outer product of input arrays, called by `transform`.
@@ -328,20 +330,21 @@ class VerySparseRandomProjection(RandomProjection):
       Y: An optional data array on GPU.
     """
     if self.sparsity == 'log':  # Very sparse.
-      prob_nonzero = cp.log(self.n_features_) / self.n_features_
+      prob_nonzero = np.log(self.n_features_) / self.n_features_
     elif self.sparsity == 'sqrt':  # Less sparse.
-      prob_nonzero = 1. / cp.sqrt(self.n_features_)
+      prob_nonzero = 1. / np.sqrt(self.n_features_)
     components_full = utils.draw_bernoulli_matrix(  # Draw sparse Bernoulli matrix.
         [self.n_components, self.n_features_], prob=prob_nonzero,
         random_state=self.random_state)
     components_full[0, 0] = 1  # Force at least one nonzero component.
     components_full = utils.draw_rademacher_matrix(  # Random flips.
       [self.n_components, self.n_features_], random_state=self.random_state)
-    self.sampled_idx_ = cp.where(  # Subsample nonzero columns.
-      cp.any(utils.robust_nonzero(components_full), axis=0))[0]
+    self.sampled_idx_ = torch.nonzero(  # Subsample nonzero columns.
+      torch.any(utils.robust_nonzero(components_full), dim=0),
+      as_tuple=True)[0]
     self.n_sampled_ = self.sampled_idx_.shape[0]
-    self.components_ = cp.take(components_full, self.sampled_idx_, axis=1)
-    self.scaling_ = cp.sqrt(1. / (prob_nonzero * self.n_components))
+    self.components_ = torch.index_select(components_full, 1, self.sampled_idx_)
+    self.scaling_ = np.sqrt(1. / (prob_nonzero * self.n_components))
 
   def _project(self, X: ArrayOnGPU) -> ArrayOnGPU:
     """Projects the input array, called by `transform`.
@@ -352,11 +355,11 @@ class VerySparseRandomProjection(RandomProjection):
     Returns:
       The projected outer-product array on GPU.
     """
-    X_sampled = cp.take(
-      X, self.sampled_idx_, axis=-1).reshape([-1, self.n_sampled_])
+    X_sampled = torch.index_select(
+      X, -1, self.sampled_idx_).reshape([-1, self.n_sampled_])
     X_proj = self.scaling_ * utils.matrix_mult(
       X_sampled, self.components_, transpose_Y=True)
-    return X_proj.reshape(X.shape[:-1] + (-1,))
+    return X_proj.reshape(tuple(X.shape[:-1]) + (-1,))
 
   def _project_outer_prod(self, X: ArrayOnGPU, Y: ArrayOnGPU) -> ArrayOnGPU:
     """Projects the outer product of input arrays, called by `transform`.
@@ -370,8 +373,8 @@ class VerySparseRandomProjection(RandomProjection):
     """
     XY_proj = utils.subsample_outer_prod(X, Y, self.sampled_idx_)
     return self.scaling_ * utils.matrix_mult(
-      cp.reshape(XY_proj, [-1, self.n_sampled_]), self.components_,
-      transpose_Y=True).reshape(XY_proj.shape[:-1] + (-1,))
+      torch.reshape(XY_proj, [-1, self.n_sampled_]), self.components_,
+      transpose_Y=True).reshape(tuple(XY_proj.shape[:-1]) + (-1,))
 
 
 # ------------------------------------------------------------------------------
@@ -545,7 +548,7 @@ class TensorizedRandomProjection(RandomProjection):
     """
     self.components_ = self.random_state.normal(
       size=[self.n_features_, self.n_components])
-    self.scaling_ = 1. / cp.sqrt(self.n_components) if Y is None else 1.
+    self.scaling_ = 1. / np.sqrt(self.n_components) if Y is None else 1.
 
   def _project(self, X: ArrayOnGPU) -> ArrayOnGPU:
     """Projects the input array, called by `transform`.
@@ -669,9 +672,10 @@ class DiagonalProjection(RandomProjection):
       The projected outer-product array on GPU.
     """
     q = self.internal_size
-    Y = Y.reshape(Y.shape[:-1] + (q, -1))
-    return cp.sqrt(self.n_features_) * cp.reshape(
-      X[..., None, :] * Y[..., None, :, :], X.shape[:-2] + (-1, X.shape[-1]))
+    Y = Y.reshape(tuple(Y.shape[:-1]) + (q, -1))
+    return np.sqrt(self.n_features_) * torch.reshape(
+      X[..., None, :] * Y[..., None, :, :],
+      tuple(X.shape[:-2]) + (-1, X.shape[-1]))
 
 
 # ------------------------------------------------------------------------------

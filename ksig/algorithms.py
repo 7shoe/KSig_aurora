@@ -1,18 +1,29 @@
-"""Signature computation dynamic programming algorithms."""
+"""Signature computation dynamic programming algorithms.
 
-import cupy as cp
-import math
+The three dynamic-programming kernels (SigPDE, GAK log-space, RWS/DTW) used to be
+hand-written Numba ``@cuda.jit`` kernels (NVIDIA-only). They are now **vectorized
+torch "wavefront" recurrences** (``docs/TORCH_PORT.md`` Sec. 4): a single Python
+loop over antidiagonals, each step one batched elementwise op over the whole
+``n_X * n_Y`` batch and the entire current antidiagonal. This is portable
+(CUDA / XPU / MPS / CPU) and generally better GPU utilization than the old
+per-pair-block kernels.
+
+On Aurora XPU an optional native SYCL fast-path (``ksig._sycl``) can do the whole
+DP in one launch / fuse the static-kernel evaluation; it is dispatched only when
+``device.type == "xpu"`` and the extension is built, otherwise these torch
+wavefronts run (and serve as the numerical oracle for the SYCL path).
+"""
+
+import os
+
 import numpy as np
-import warnings
+import torch
 
 from .projections import (DiagonalProjection, RandomProjection,
                           TensorizedRandomProjection)
 from .utils import _EPS, ArrayOnGPU, multi_cumsum
-from numba import cuda
-from numba.core.errors import NumbaPerformanceWarning
-from typing import List, Optional, Union
-
-warnings.simplefilter('ignore', category=NumbaPerformanceWarning)
+from .torch_backend import as_index, eps_for
+from typing import List, Optional, Tuple, Union
 
 
 # -----------------------------------------------------------------------------
@@ -61,28 +72,28 @@ def signature_kern_first_order(M: ArrayOnGPU, n_levels: int,
   """
 
   if difference:
-    M = cp.diff(cp.diff(M, axis=-2), axis=-1)
+    M = torch.diff(torch.diff(M, dim=-2), dim=-1)
   if M.ndim == 4:
     n_X, n_Y  = M.shape[:2]
-    K = cp.ones((n_X, n_Y), dtype=M.dtype)
+    K = torch.ones((n_X, n_Y), dtype=M.dtype, device=M.device)
   else:
     n_X = M.shape[0]
-    K = cp.ones((n_X,), dtype=M.dtype)
+    K = torch.ones((n_X,), dtype=M.dtype, device=M.device)
 
   if return_levels:
-    K = [K, cp.sum(M, axis=(-2, -1))]
+    K = [K, torch.sum(M, dim=(-2, -1))]
   else:
-    K += cp.sum(M, axis=(-2, -1))
+    K = K + torch.sum(M, dim=(-2, -1))
 
-  R = cp.copy(M)
+  R = M.clone()
   for i in range(1, n_levels):
     R = M * multi_cumsum(R, exclusive=True, axis=(-2, -1))
     if return_levels:
-      K.append(cp.sum(R, axis=(-2, -1)))
+      K.append(torch.sum(R, dim=(-2, -1)))
     else:
-      K += cp.sum(R, axis=(-2, -1))
+      K = K + torch.sum(R, dim=(-2, -1))
 
-  return cp.stack(K, axis=0) if return_levels else K
+  return torch.stack(K, dim=0) if return_levels else K
 
 
 def signature_kern_higher_order(M: ArrayOnGPU, n_levels: int, order: int,
@@ -103,41 +114,42 @@ def signature_kern_higher_order(M: ArrayOnGPU, n_levels: int, order: int,
   """
 
   if difference:
-    M = cp.diff(cp.diff(M, axis=-2), axis=-1)
+    M = torch.diff(torch.diff(M, dim=-2), dim=-1)
 
   if M.ndim == 4:
     n_X, n_Y = M.shape[0], M.shape[1]
-    K = cp.ones((n_X, n_Y), dtype=M.dtype)
+    K = torch.ones((n_X, n_Y), dtype=M.dtype, device=M.device)
   else:
     n_X = M.shape[0]
-    K = cp.ones((n_X,), dtype=M.dtype)
+    K = torch.ones((n_X,), dtype=M.dtype, device=M.device)
 
   if return_levels:
-    K = [K, cp.sum(M, axis=(-2, -1))]
+    K = [K, torch.sum(M, dim=(-2, -1))]
   else:
-    K += cp.sum(M, axis=(-2, -1))
+    K = K + torch.sum(M, dim=(-2, -1))
 
-  R = cp.copy(M)[None, None, ...]
+  R = M.clone()[None, None, ...]
   for i in range(1, n_levels):
     d = min(i+1, order)
-    R_next = cp.empty((d, d) + M.shape, dtype=M.dtype)
+    R_next = torch.empty((d, d) + tuple(M.shape), dtype=M.dtype,
+                         device=M.device)
     # Both time axes are non-repeating.
     R_next[0, 0] = M * multi_cumsum(
-      cp.sum(R, axis=(0, 1)), exclusive=True, axis=(-2, -1))
+      torch.sum(R, dim=(0, 1)), exclusive=True, axis=(-2, -1))
     for r in range(1, d):
       R_next[0, r] = 1./(r+1) * M * multi_cumsum(
-        cp.sum(R[:, r-1], axis=0), exclusive=True, axis=-2)
+        torch.sum(R[:, r-1], dim=0), exclusive=True, axis=-2)
       R_next[r, 0] = 1./(r+1) * M * multi_cumsum(
-        cp.sum(R[r-1, :], axis=0), exclusive=True, axis=-1)
+        torch.sum(R[r-1, :], dim=0), exclusive=True, axis=-1)
       for s in range(1, d):
         R_next[r, s] = 1./((r+1)*(s+1)) * M * R[r-1, s-1]
     R = R_next
     if return_levels:
-      K.append(cp.sum(R, axis=(0, 1, -2, -1)))
+      K.append(torch.sum(R, dim=(0, 1, -2, -1)))
     else:
-      K += cp.sum(R, axis=(0, 1, -2, -1))
+      K = K + torch.sum(R, dim=(0, 1, -2, -1))
 
-  return cp.stack(K, axis=0) if return_levels else K
+  return torch.stack(K, dim=0) if return_levels else K
 
 
 # -----------------------------------------------------------------------------
@@ -193,41 +205,41 @@ def signature_kern_first_order_low_rank(
 
   if isinstance(U, list):
     if difference:
-      U = [cp.diff(U[i], axis=1) for i in range(n_levels)]
+      U = [torch.diff(U[i], dim=1) for i in range(n_levels)]
 
     n_X, l_X, n_d = U[0].shape
-    P = cp.ones((n_X, 1), dtype=U[0].dtype)
+    P = torch.ones((n_X, 1), dtype=U[0].dtype, device=U[0].device)
     R = (projections[0](U[0], return_on_gpu=True) if projections is not None
-         else cp.copy(U[0]))
+         else U[0].clone())
   else:
     if difference:
-      U = cp.diff(U, axis=1)
+      U = torch.diff(U, dim=1)
     n_X, l_X, n_d = U.shape
-    P = cp.ones((n_X, 1), dtype=U.dtype)
+    P = torch.ones((n_X, 1), dtype=U.dtype, device=U.device)
     R = (projections[0](U, return_on_gpu=True) if projections is not None else
-         cp.copy(U))
+         U.clone())
 
   if (projections is not None and
       isinstance(projections[0], TensorizedRandomProjection)):
     R_reshaped = R.reshape(
       [n_X, l_X, projections[0].n_components, projections[0].rank])
-    R_sum = cp.sum(R_reshaped, axis=(1, -1))
+    R_sum = torch.sum(R_reshaped, dim=(1, -1))
   else:
-    R_sum = cp.sum(R, axis=1)
+    R_sum = torch.sum(R, dim=1)
 
   if return_levels:
     P = [P, R_sum.reshape([n_X, -1])]
   else:
-    P = cp.concatenate((P, R_sum.reshape([n_X, -1])), axis=-1)
+    P = torch.cat((P, R_sum.reshape([n_X, -1])), dim=-1)
 
   for i in range(1, n_levels):
     R = multi_cumsum(R, axis=1, exclusive=True)
     if projections is None:
       if isinstance(U, list):
-        R = cp.reshape(R[..., :, None] * U[i][..., None, :], (n_X, l_X, -1))
+        R = torch.reshape(R[..., :, None] * U[i][..., None, :], (n_X, l_X, -1))
       else:
-        R = cp.reshape(R[..., :, None] * U[..., None, :], (n_X, l_X, -1))
-      R_sum = cp.sum(R, axis=1)
+        R = torch.reshape(R[..., :, None] * U[..., None, :], (n_X, l_X, -1))
+      R_sum = torch.sum(R, dim=1)
     else:
       if isinstance(U, list):
         R = projections[i](R, U[i], return_on_gpu=True)
@@ -236,14 +248,14 @@ def signature_kern_first_order_low_rank(
       if isinstance(projections[i], TensorizedRandomProjection):
         R_reshaped = R.reshape(
           [n_X, l_X, projections[i].n_components, projections[i].rank])
-        R_sum = cp.sum(R_reshaped, axis=(1, -1))
+        R_sum = torch.sum(R_reshaped, dim=(1, -1))
       else:
-        R_sum = cp.sum(R, axis=1)
+        R_sum = torch.sum(R, dim=1)
     R_sum = R_sum.reshape([n_X, -1])
     if return_levels:
       P.append(R_sum)
     else:
-      P = cp.concatenate((P, R_sum), axis=-1)
+      P = torch.cat((P, R_sum), dim=-1)
   return P
 
 def signature_kern_higher_order_low_rank(
@@ -266,34 +278,36 @@ def signature_kern_higher_order_low_rank(
   """
   if isinstance(U, list):
     if difference:
-      U = [cp.diff(U[i], axis=1) for i in range(n_levels)]
+      U = [torch.diff(U[i], dim=1) for i in range(n_levels)]
     n_X, l_X = U[0].shape[:2]
     n_d = U[0].shape[-1]
-    P = cp.ones((n_X, 1), dtype=U[0].dtype)
+    dtype, device = U[0].dtype, U[0].device
+    P = torch.ones((n_X, 1), dtype=dtype, device=device)
     R = (projections[0](U[0], return_on_gpu=True) if projections is not None
-         else cp.copy(U[0]))
+         else U[0].clone())
   else:
     if difference:
-      U = cp.diff(U, axis=1)
+      U = torch.diff(U, dim=1)
     n_X, l_X = U.shape[:2]
     n_d = U.shape[-1]
-    P = cp.ones((n_X, 1), dtype=U.dtype)
+    dtype, device = U.dtype, U.device
+    P = torch.ones((n_X, 1), dtype=dtype, device=device)
     R = (projections[0](U, return_on_gpu=True) if projections is not None else
-         cp.copy(U))
+         U.clone())
 
   if (projections is not None and
       isinstance(projections[0], TensorizedRandomProjection)):
     R_reshaped = R.reshape(
       [n_X, l_X, projections[0].n_components, projections[0].rank])
-    R_sum = cp.sum(R_reshaped, axis=(1, -1))
+    R_sum = torch.sum(R_reshaped, dim=(1, -1))
   else:
-    R_sum = cp.sum(R, axis=1)
+    R_sum = torch.sum(R, dim=1)
 
   R_sum = R_sum.reshape([n_X, -1])
   if return_levels:
     P = [P, R_sum]
   else:
-    P = cp.concatenate((P, R_sum), axis=-1)
+    P = torch.cat((P, R_sum), dim=-1)
 
   R = R[None]
   for i in range(1, n_levels):
@@ -302,19 +316,21 @@ def signature_kern_higher_order_low_rank(
     if (projections is not None and
         isinstance(projections[i], DiagonalProjection)):
       internal_size = projections[i].internal_size
-      R_next = cp.empty((d, n_X, l_X, internal_size**(i+1), n_components))
+      R_next = torch.empty((d, n_X, l_X, internal_size**(i+1), n_components),
+                           dtype=dtype, device=device)
     else:
-      R_next = cp.empty((d, n_X, l_X, n_components))
+      R_next = torch.empty((d, n_X, l_X, n_components), dtype=dtype,
+                           device=device)
     U_next = U[i] if isinstance(U, list) else U
-    Q = multi_cumsum(cp.sum(R, axis=0), axis=1, exclusive=True)
+    Q = multi_cumsum(torch.sum(R, dim=0), axis=1, exclusive=True)
     if projections is None:
-      R_next[0] = cp.reshape(
+      R_next[0] = torch.reshape(
         Q[..., :, None] * U_next[..., None, :], (n_X, l_X, -1))
     else:
       R_next[0] = projections[i](Q, U_next, return_on_gpu=True)
     if projections is None:
       for r in range(1, d):
-        R_next[r] = 1./(r+1) * cp.reshape(
+        R_next[r] = 1./(r+1) * torch.reshape(
           R[r-1, ..., :, None] * U_next[..., None, :],
           (n_X, l_X, n_components))
     else:
@@ -326,309 +342,181 @@ def signature_kern_higher_order_low_rank(
         isinstance(projections[i], TensorizedRandomProjection)):
       R_reshaped = R.reshape(
         [d, n_X, l_X, projections[i].n_components, projections[i].rank])
-      R_sum = cp.sum(R_reshaped, axis=(0, 2, -1))
+      R_sum = torch.sum(R_reshaped, dim=(0, 2, -1))
     else:
-      R_sum = cp.sum(R, axis=(0, 2))
+      R_sum = torch.sum(R, dim=(0, 2))
     R_sum = R_sum.reshape([n_X, -1])
     if return_levels:
       P.append(R_sum)
     else:
-      P = cp.concatenate((P, R_sum), axis=-1)
+      P = torch.cat((P, R_sum), dim=-1)
   return P
+
+
+# -----------------------------------------------------------------------------
+# Vectorized antidiagonal "wavefront" DP (shared by SigPDE / GAK / RWS).
+# -----------------------------------------------------------------------------
+
+def _antidiag_indices(it: int, l_X: int, l_Y: int, device
+                      ) -> Tuple[ArrayOnGPU, ArrayOnGPU]:
+  """Row/column index tensors of the cells on antidiagonal `it` (i + j == it).
+
+  Returns `(i, j)`, each of shape `[d]`, with `0 <= i < l_X`, `0 <= j < l_Y`.
+  """
+  i_lo = max(0, it - (l_Y - 1))
+  i_hi = min(it, l_X - 1)
+  i = torch.arange(i_lo, i_hi + 1, device=device)
+  j = it - i
+  return i, j
+
+
+def _sycl_enabled() -> bool:
+  """Whether the SYCL fast-path is allowed to engage.
+
+  Controlled by the ``KSIG_USE_SYCL`` env var (read per-call so benchmarks can
+  flip it between processes). Default is on: SYCL auto-engages whenever the ext
+  is built and the inputs are on XPU. Set ``KSIG_USE_SYCL=0`` (also ``false`` /
+  ``no`` / ``off``) to force the torch wavefront -- this is how the ``monitoring/``
+  acceptance gate (SYCL_HANDOFF.md Sec. 7) measures the torch-XPU baseline
+  against the SYCL fast-path: run the suite twice, ``KSIG_USE_SYCL=0`` then ``=1``.
+  """
+  val = os.environ.get('KSIG_USE_SYCL')
+  if val is None:
+    return True
+  return val.strip().lower() not in ('0', 'false', 'no', 'off', '')
+
+
+def _try_sycl(name: str, *args):
+  """Dispatch to the native SYCL fast-path when on XPU and the ext is built.
+
+  Returns the SYCL result, or ``None`` to signal "fall through to the torch
+  wavefront". Any import/availability/runtime error falls through silently —
+  the torch wavefront is always correct and is the numerical oracle.
+  """
+  if not _sycl_enabled():
+    return None
+  first = args[0]
+  if not (isinstance(first, torch.Tensor) and first.device.type == 'xpu'):
+    return None
+  try:
+    from ._sycl import loader
+    if not loader.available():
+      return None
+    return getattr(loader.get_ext(), name)(*args)
+  except Exception:
+    return None
 
 
 # -----------------------------------------------------------------------------
 # Signature-PDE Kernel.
 # -----------------------------------------------------------------------------
 
-@cuda.jit
-def _signature_kern_pde(M: ArrayOnGPU, K: ArrayOnGPU,
-                        K_sol: ArrayOnGPU):
-  """CUDA kernel for computing the signature-PDE kernel.
-
-  Args:
-    M: A data array on GPU of shape `[n_X, n_Y, l_X, l_Y]`.
-    K: Output array of shape `[n_X, n_Y]`.
-    K_sol: Temp array of shape `[n_X, n_Y, 3 * min(l_X, l_Y)]` or of shape
-      `[0]`. In the latter case, shared memory should be allocated at the launch
-      of the kernel of `size = 3 * min(l_X, l_Y)`.
-  """
-  _, _, l_X, l_Y = M.shape
-  l = min(l_X, l_Y)
-  num_iter = l_X + l_Y - 1
-  idx_X, idx_Y = cuda.blockIdx.x, cuda.blockIdx.y
-  # Temp array that contains the current and the previous 2 antidiagonals.
-  if K_sol.ndim == 1:
-    temp = cuda.shared.array(0, M.dtype)
-  else:
-    temp = K_sol[idx_X, idx_Y]
-  # Iterate over the antidiagonals one by one.
-  for it in range(num_iter):
-    num_anti_diag = min(it+1, l_X, l_Y, num_iter-it)
-    # Break the given antidiagonal into chunks of size `blockDim.x`.
-    num_chunks = 1 + (num_anti_diag-1) // cuda.blockDim.x
-    # Starting index on the given antidiagonal.
-    I, J = max(0, it - l_Y + 1), min(it, l_Y - 1)
-    for p in range(num_chunks):
-      # Location on the given antidiagonal.
-      k = p * cuda.blockDim.x + cuda.threadIdx.x
-      # Index to process on the given antidiagonal.
-      i, j = I + k, J - k
-      # if i < l_X and 0 <= j:  This is equivalent to the following.
-      if k < num_anti_diag:
-        Mij = M[idx_X, idx_Y, i, j]
-        K01 = 1. if i==0 else temp[3*k-2] if I==0 else temp[3*k+1]
-        K10 = 1. if j==0 else temp[3*k+1] if I==0 else temp[3*k+4]
-        K00 = (1. if i==0 or j==0 else temp[3*k-3] if I==0 else temp[3*k]
-               if I==1 else temp[3*k+3])
-        temp[3*k+2] = (
-          (K01 + K10) * (1. + 1./2*Mij+1./12*Mij**2) - K00*(1. - 1./12*Mij**2))
-    # Wait until all the antidiagonal entries have been processed.
-    cuda.syncthreads()
-    # Roll the solution array by 1.
-    for p in range(num_chunks):
-      k = p * cuda.blockDim.x + cuda.threadIdx.x
-      if k < num_anti_diag:
-        temp[3*k] = temp[3*k+1]
-        temp[3*k+1] = temp[3*k+2]
-    # Wait for writes to be visible for all threads.
-    cuda.threadfence_block()
-    cuda.syncthreads()
-  # Save the result.
-  if cuda.threadIdx.x == 0:
-    K[idx_X, idx_Y] = temp[2]
-
-
 def signature_kern_pde(M: ArrayOnGPU, difference: bool = True) -> ArrayOnGPU:
   """Computes the signature-PDE kernel using a kernel trick.
+
+  Vectorized antidiagonal wavefront (TORCH_PORT Sec. 4.2). With `m = M[..,i,j]`:
+    K(i,j) = (K(i-1,j) + K(i,j-1)) * (1 + m/2 + m^2/12)
+             - K(i-1,j-1) * (1 - m^2/12)
+  with all border neighbors equal to 1 (encoded as the padded table borders).
 
   Args:
     M: Kernel evaluations of shape `[n_X, n_Y, l_X, l_Y]` or `[n, l_X, l_Y]`.
     difference: Whether to take increments of lifted sequences in the RKHS.
-    vanilla_scheme: Whether to use the vanilla first-order PDE solver.
 
   Returns:
     The SigPDE kernel matrix of shape `[n_X, n_Y]` or `[n]`, see `M` above.
   """
-  # Handle diagonal case.
-  is_diag = M.ndim == 3
+  is_diag = (M.ndim == 3)
   if is_diag:
-    M = M[:, None, :, :]
+    M = M[:, None]
   if M.ndim != 4:
     raise ValueError('The `M` matrix must have `.ndim==3` or `.ndim==4`.')
-  # Take increments.
+
+  sycl = _try_sycl('sig_pde', M.contiguous(), difference)
+  if sycl is not None:
+    return sycl.squeeze(1) if is_diag else sycl
+
   if difference:
-    M = cp.diff(cp.diff(M, axis=-2), axis=-1)
-  # Set the parameters.
-  n_X, n_Y, l_X, l_Y = M.shape
-  num_blocks = (n_X, n_Y)
-  num_threads = min(l_X, l_Y, 1024)
-  stream = cuda.default_stream()
-  num_shared = 3 * min(l_X, l_Y)
-  shared_mem = num_shared * M.itemsize
-  max_shared_mem = cp.cuda.device.Device().attributes[
-    'MaxSharedMemoryPerBlock']
-  # Array of output kernel values.
-  K = cp.empty((n_X, n_Y), dtype=M.dtype)
-  # If temporary values do not fit in shared memory, use global.
-  if shared_mem > max_shared_mem:
-    # Can't use shared memory, allocate global array now.
-    K_sol = cp.empty((n_X, n_Y, num_shared), dtype=M.dtype)
-    shared_mem = 0
-  else:
-    # Fits in shared memory, allocate dynamically.
-    K_sol = cp.empty((0), dtype=M.dtype)
-  # Launch kernel maybe with shared memory for propagating the PDE solution.
-  _signature_kern_pde[num_blocks, num_threads, stream, shared_mem](
-    M, K, K_sol)
-  if is_diag:
-    K = cp.squeeze(K, axis=1)
-  return K
+    M = torch.diff(torch.diff(M, dim=-2), dim=-1)
+  nX, nY, lX, lY = M.shape
+  dev = M.device
+  # Padded table: data cell (i, j) lives at H[.., i+1, j+1]; borders are 1.
+  H = torch.ones((nX, nY, lX + 1, lY + 1), dtype=M.dtype, device=dev)
+  for it in range(lX + lY - 1):
+    i, j = _antidiag_indices(it, lX, lY, dev)
+    up   = H[:, :, i,     j + 1]
+    left = H[:, :, i + 1, j]
+    diag = H[:, :, i,     j]
+    m    = M[:, :, i, j]
+    H[:, :, i + 1, j + 1] = (
+      (up + left) * (1 + 0.5 * m + m * m / 12) - diag * (1 - m * m / 12))
+  K = H[:, :, lX, lY]
+  return K.squeeze(1) if is_diag else K
 
 
 # -----------------------------------------------------------------------------
 # Global Alignment Kernel.
 # -----------------------------------------------------------------------------
 
-@cuda.jit
-def _global_align_kern_log(logM: ArrayOnGPU, logK: ArrayOnGPU,
-                           logK_sol: ArrayOnGPU):
-  """CUDA kernel for computing the logarithm of the GA kernel.
-
-  Args:
-    logM: A data array on GPU of shape `[n_X, n_Y, l_X, l_Y]`.
-    logK: Output array of shape `[n_X, n_Y]`.
-    logK_sol: Temp array of shape `[n_X, n_Y, 3 * min(l_X, l_Y)]` or of shape
-      `[0]`. In the latter case, shared memory should be allocated at the
-      launch of the kernel of `size = 3 * min(l_X, l_Y)`.
-  """
-  _, _, l_X, l_Y = logM.shape
-  l = min(l_X, l_Y)
-  num_iter = l_X + l_Y - 1
-  idx_X, idx_Y = cuda.blockIdx.x, cuda.blockIdx.y
-  # Temp array that contains the current and the previous 2 antidiagonals.
-  if logK_sol.ndim == 1:
-    temp = cuda.shared.array(0, logM.dtype)
-  else:
-    temp = logK_sol[idx_X, idx_Y]
-  # Iterate over the antidiagonals one by one.
-  for it in range(num_iter):
-    num_anti_diag = min(it+1, l_X, l_Y, num_iter-it)
-    # Break the given antidiagonal into chunks of size `blockDim.x`.
-    num_chunks = 1 + (num_anti_diag-1) // cuda.blockDim.x
-    # Starting index on the given antidiagonal.
-    I, J = max(0, it-l_Y+1), min(it, l_Y-1)
-    for p in range(num_chunks):
-      # Location on the given antidiagonal.
-      k = p * cuda.blockDim.x + cuda.threadIdx.x
-      # Index to process on the given antidiagonal.
-      i, j = I + k, J - k
-      # if i < l_X and 0 <= j:  This is equivalent to the following.
-      if k < num_anti_diag:
-        logMij = logM[idx_X, idx_Y, i, j]
-        logK01 = -np.inf if i==0 else temp[3*k-2] if I==0 else temp[3*k+1]
-        logK10 = -np.inf if j==0 else temp[3*k+1] if I==0 else temp[3*k+4]
-        logK00 = (0. if i==0 and j==0 else -np.inf if i==0 or j==0 else
-                  temp[3*k-3] if I==0 else temp[3*k] if I==1 else temp[3*k+3])
-        # Use log-sum-exp trick.
-        max_logK = max(logK01, logK10, logK00)
-        temp[3*k+2] = logMij + max_logK + math.log(math.exp(logK01-max_logK) +
-                                                   math.exp(logK10-max_logK) +
-                                                   math.exp(logK00-max_logK))
-    # Wait until all the antidiagonal entries have been processed.
-    cuda.syncthreads()
-    # Roll the solution array by 1.
-    for p in range(num_chunks):
-      k = p * cuda.blockDim.x + cuda.threadIdx.x
-      if k < num_anti_diag:
-        temp[3*k] = temp[3*k+1]
-        temp[3*k+1] = temp[3*k+2]
-    # Wait for writes to be visible for all threads.
-    cuda.threadfence_block()
-    cuda.syncthreads()
-  # Save the result.
-  if cuda.threadIdx.x == 0:
-    logK[idx_X, idx_Y] = temp[2]
-
-
 def global_align_kern_log(M: ArrayOnGPU) -> ArrayOnGPU:
-  """Computes the Global Alignment Kernel.
+  """Computes the (log-space) Global Alignment Kernel.
+
+  Vectorized antidiagonal wavefront (TORCH_PORT Sec. 4.3):
+    logK(i,j) = logM(i,j) + logsumexp(logK(i-1,j), logK(i,j-1), logK(i-1,j-1))
+  borders -inf, corner seed logK(-1,-1)=0. The driver transform is
+  `M <- M/(2-M)` then `logM = log(clamp(M, _EPS))`.
 
   Args:
-    M: Kernel evaluations of shape `[n_X, n_Y, l_X, l_Y]`
-        for computing K with shape `[n_X, n_Y], or of shape `[n, l_X, l_Y]`
-        in which case the output matrix has shape `[n]`.
+    M: Kernel evaluations of shape `[n_X, n_Y, l_X, l_Y]` or `[n, l_X, l_Y]`.
 
   Returns:
-    The GA kernel matrix of shape `[n_X, n_Y]` or `[n]`, see `M` above.
+    The (log-space) GA kernel matrix of shape `[n_X, n_Y]` or `[n]`.
   """
-  # Handle diagonal case.
-  is_diag = M.ndim == 3
+  is_diag = (M.ndim == 3)
   if is_diag:
-    M = M[:, None, :, :]
+    M = M[:, None]
   if M.ndim != 4:
     raise ValueError('The `M` matrix must have `.ndim==3` or `.ndim==4`.')
-  # Transform `M` to make it "infinitely divisible".
+
+  sycl = _try_sycl('gak_log', M.contiguous())
+  if sycl is not None:
+    return sycl.squeeze(1) if is_diag else sycl
+
+  # Transform `M` to make it "infinitely divisible", then work in log-space.
   M = M / (2. - M)
-  # Do the computations in log-space.
-  logM = cp.log(cp.maximum(M, _EPS))
-  # Set the parameters.
-  n_X, n_Y, l_X, l_Y = M.shape
-  num_blocks = (n_X, n_Y)
-  num_threads = min(l_X, l_Y, 1024)
-  stream = cuda.default_stream()
-  num_shared = 3 * min(l_X, l_Y)
-  shared_mem = num_shared * M.itemsize
-  max_shared_mem = cp.cuda.device.Device().attributes[
-    'MaxSharedMemoryPerBlock']
-  # Array of output kernel values.
-  logK = cp.empty((n_X, n_Y), dtype=M.dtype)
-  # If temporary values do not fit in shared memory, use global.
-  if shared_mem > max_shared_mem:
-    # Can't use shared memory, allocate global array now.
-    logK_sol = cp.empty((n_X, n_Y, num_shared), dtype=M.dtype)
-    shared_mem = 0
-  else:
-    # Fits in shared memory, allocate dynamically.
-    logK_sol = cp.empty((0), dtype=M.dtype)
-  # Launch kernel with shared memory for propagating the DP solution.
-  _global_align_kern_log[num_blocks, num_threads, stream, shared_mem](
-    logM, logK, logK_sol)
-  if is_diag:
-    logK = cp.squeeze(logK, axis=1)
-  return logK
+  logM = torch.log(torch.clamp(M, min=eps_for(M.dtype)))
+  nX, nY, lX, lY = M.shape
+  dev = M.device
+  H = torch.full((nX, nY, lX + 1, lY + 1), float('-inf'), dtype=M.dtype,
+                 device=dev)
+  H[:, :, 0, 0] = 0.
+  for it in range(lX + lY - 1):
+    i, j = _antidiag_indices(it, lX, lY, dev)
+    up   = H[:, :, i,     j + 1]
+    left = H[:, :, i + 1, j]
+    diag = H[:, :, i,     j]
+    H[:, :, i + 1, j + 1] = logM[:, :, i, j] + torch.logsumexp(
+      torch.stack([up, left, diag], dim=0), dim=0)
+  logK = H[:, :, lX, lY]
+  return logK.squeeze(1) if is_diag else logK
 
 
 # -----------------------------------------------------------------------------
 # Random Warping Series.
 # -----------------------------------------------------------------------------
 
-@cuda.jit
-def _random_warping_series_dtw(D: ArrayOnGPU, P: ArrayOnGPU, P_sol: ArrayOnGPU,
-                               warp_segments: ArrayOnGPU):
-  """CUDA kernel for computing Random Warping Series features.
-
-  Args:
-    D: Squared distances from (variable length) warping series given as a GPU
-      array of shape `[n_X, l_X, sum of l_Y]`.
-    P: Output array for the log of features of shape `[n_X, n_Y]`.
-    P_sol: An array of shape `[n_X, n_Y, 3 * min(l_X, l_Y)]` or of shape
-      `[0]`. In the latter case, shared memory should be allocated at the
-      launch of the kernel of `size = 3 * min(l_X, l_Y)`.
-    warp_segments: Array of shape `[n_Y + 1]`, the endpoints of the warps.
-  """
-  idx_X, idx_Y = cuda.blockIdx.x, cuda.blockIdx.y
-  l_X = D.shape[1]
-  l_Y = warp_segments[idx_Y + 1] - warp_segments[idx_Y]
-  num_iter = l_X + l_Y - 1
-  # Temp array that contains the current and the previous 2 antidiagonals.
-  if P_sol.ndim == 1:
-    temp = cuda.shared.array(0, D.dtype)
-  else:
-    temp = P_sol[idx_X, idx_Y]
-  # Iterate over the antidiagonals one by one.
-  for it in range(num_iter):
-    num_anti_diag = min(it+1, l_X, l_Y, num_iter-it)
-    # Break the given antidiagonal into chunks of size `blockDim.x`.
-    num_chunks = 1 + (num_anti_diag-1) // cuda.blockDim.x
-    # Starting index on the given antidiagonal.
-    I, J = max(0, it-l_Y+1), min(it, l_Y-1)
-    for p in range(num_chunks):
-      # Location on the given antidiagonal.
-      k = p * cuda.blockDim.x + cuda.threadIdx.x
-      # Index to process on the given antidiagonal.
-      i, j = I + k, J - k
-      # if i < l_X and 0 <= j:  This is equivalent to the following.
-      if k < num_anti_diag:
-        Dij = D[idx_X, i, warp_segments[idx_Y] + j]
-        P01 = np.inf if i==0 else temp[3*k-2] if I==0 else temp[3*k+1]
-        P10 = np.inf if j==0 else temp[3*k+1] if I==0 else temp[3*k+4]
-        P00 = (0 if i==0 and j==0 else np.inf if i==0 or j==0 else
-                  temp[3*k-3] if I==0 else temp[3*k] if I==1 else temp[3*k+3])
-        temp[3*k+2] = Dij + min(P01, P10, P00)
-    # Wait until all the antidiagonal entries have been processed.
-    cuda.syncthreads()
-    # Roll the solution array by 1.
-    for p in range(num_chunks):
-      k = p * cuda.blockDim.x + cuda.threadIdx.x
-      if k < num_anti_diag:
-        temp[3*k] = temp[3*k+1]
-        temp[3*k+1] = temp[3*k+2]
-    # Wait for writes to be visible for all threads.
-    cuda.threadfence_block()
-    cuda.syncthreads()
-  # Save the result.
-  if cuda.threadIdx.x == 0:
-    P[idx_X, idx_Y] = temp[2]
-
-
 def random_warping_series(D: ArrayOnGPU, warp_lens: ArrayOnGPU) -> ArrayOnGPU:
-  """Computes the logarithm of Random Warping Series features.
+  """Computes the (log of) Random Warping Series features via DTW.
+
+  Vectorized antidiagonal wavefront (TORCH_PORT Sec. 4.4):
+    P(i,j) = D(i,j) + min(P(i-1,j), P(i,j-1), P(i-1,j-1))
+  borders +inf, corner seed 0. Variable warp lengths are handled by a
+  pad-and-gather over a padded `[n_X, n_Y, l_X, l_Y_max]` cost table; each series
+  is read at its own true terminal column `l_Y(y)`.
 
   Args:
-    M: Squared distances from (variable length) random time series given as a
-      GPU array of shape `[n_X, l_X, sum of l_Y]`.
-    warp_lens: Lengths of each warping series, array of shape `[n_Y]'.
+    D: Squared distances of shape `[n_X, l_X, sum of l_Y]`.
+    warp_lens: Lengths of each warping series, array of shape `[n_Y]`.
 
   Returns:
     Random Warping Series features of shape `[n_X, n_Y]`.
@@ -638,33 +526,38 @@ def random_warping_series(D: ArrayOnGPU, warp_lens: ArrayOnGPU) -> ArrayOnGPU:
   """
   if D.ndim != 3:
     raise ValueError('`D` distances array must have `.ndim==3`.')
-  # Set the parameters.
-  n_X, l_X = D.shape[:2]
-  n_Y = warp_lens.shape[0]
-  l_Y = int(cp.max(warp_lens))
-  num_blocks = (n_X, n_Y)
-  num_threads = min(l_X, l_Y, 1024)
-  stream = cuda.default_stream()
-  num_shared = 3 * min(l_X, l_Y)
-  shared_mem = num_shared * D.itemsize
-  max_shared_mem = cp.cuda.device.Device().attributes[
-    'MaxSharedMemoryPerBlock']
-  # Array of output for the log of feature values.
-  P = cp.empty((n_X, n_Y), dtype=D.dtype)
-  # If temporary values do not fit in shared memory, use global.
-  if shared_mem > max_shared_mem:
-    # Can't use shared memory, allocate global array now.
-    P_sol = cp.empty((n_X, n_Y, num_shared), dtype=D.dtype)
-    shared_mem = 0
-  else:
-    # Fits in shared memory, allocate dynamically.
-    P_sol = cp.empty((0), dtype=D.dtype)
-  # Launch kernel maybe with shared memory for propagating the solution.
-  warp_segments = cp.concatenate(
-    (cp.zeros([1], dtype=int),
-     cp.cumsum(warp_lens, axis=0)), axis=0)  # Endpoints of warps.
-  _random_warping_series_dtw[num_blocks, num_threads, stream, shared_mem](
-    D, P, P_sol, warp_segments)
+  dev = D.device
+  warp_lens = as_index(warp_lens, device=dev)
+
+  sycl = _try_sycl('rws_dtw', D.contiguous(), warp_lens)
+  if sycl is not None:
+    return sycl
+
+  nX, lX = D.shape[:2]
+  nY = warp_lens.shape[0]
+  seg = torch.cat([torch.zeros(1, dtype=torch.long, device=dev),
+                   torch.cumsum(warp_lens, 0)])        # [nY + 1]
+  lY = seg[1:] - seg[:-1]                              # [nY]
+  lY_max = int(lY.max())
+  # Scatter D -> Dpad[x, y, i, 0:lY(y)]; right-pad with +inf (never read by the
+  # min,+ recurrence at the valid terminal columns).
+  Dpad = torch.full((nX, nY, lX, lY_max), float('inf'), dtype=D.dtype,
+                    device=dev)
+  for y in range(nY):
+    Dpad[:, y, :, :int(lY[y])] = D[:, :, int(seg[y]):int(seg[y+1])]
+  H = torch.full((nX, nY, lX + 1, lY_max + 1), float('inf'), dtype=D.dtype,
+                 device=dev)
+  H[:, :, 0, 0] = 0.
+  for it in range(lX + lY_max - 1):
+    i, j = _antidiag_indices(it, lX, lY_max, dev)
+    up   = H[:, :, i,     j + 1]
+    left = H[:, :, i + 1, j]
+    diag = H[:, :, i,     j]
+    H[:, :, i + 1, j + 1] = Dpad[:, :, i, j] + torch.minimum(
+      torch.minimum(up, left), diag)
+  # Gather each series at its own terminal column l_Y(y).
+  term = lY.view(1, nY, 1).expand(nX, nY, 1)
+  P = H[:, :, lX, :].gather(-1, term).squeeze(-1)      # [nX, nY]
   return P
 
 

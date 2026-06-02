@@ -1,7 +1,8 @@
 """Static (state-space) feature maps implementing a `transform` method."""
 
-import cupy as cp
+import math
 import numpy as np
+import torch
 import warnings
 
 from abc import ABCMeta, abstractmethod
@@ -11,6 +12,7 @@ from typing import Optional
 
 from .. import utils
 from ..utils import ArrayOnCPU, ArrayOnGPU, ArrayOnCPUOrGPU, RandomStateOrSeed
+from ..torch_backend import as_tensor, to_numpy
 from .kernels import Kernel
 
 
@@ -121,11 +123,11 @@ class KernelFeatures(Kernel, TransformerMixin, metaclass=ABCMeta):
       A feature set on CPU or GPU.
     """
     check_is_fitted(self)
-    # Validate data and move it to GPU.
-    X = cp.asarray(self._validate_data(X))
+    # Validate data and move it to the compute device.
+    X = as_tensor(self._validate_data(X))
     X_feat = self._compute_features(X)
     if not return_on_gpu:
-      X_feat = cp.asnumpy(X_feat)
+      X_feat = to_numpy(X_feat)
     return X_feat
 
   def _K(self, X: ArrayOnGPU, Y: Optional[ArrayOnGPU] = None) -> ArrayOnGPU:
@@ -247,13 +249,12 @@ class NystroemFeatures(StaticFeatures):
     # Subsample the data.
     basis_idx = self.random_state.choice(n_samples, size=self.n_components_,
                                          replace=False)
-    if isinstance(X, ArrayOnCPU):
-      basis_idx = cp.asnumpy(basis_idx)  # Doing this seems most efficient.
-    basis = cp.asarray(X[basis_idx])
+    X = as_tensor(X)
+    basis = X[basis_idx]
     # Build the kernel matrix.
     basis_K = self.base_kernel(basis, return_on_gpu=True)
     # Now decompose it.
-    S, U = cp.linalg.eigh(basis_K)
+    S, U = torch.linalg.eigh(basis_K)
     # Mask zero eigenvalues.
     nonzero_eigs_mask = utils.robust_nonzero(S)
     # Compute and save K^(-1/2).
@@ -333,10 +334,10 @@ class RandomFourierFeatures(StaticFeatures):
     """
     projection = utils.matrix_mult(
       X.reshape([-1, self.n_features_]), self.random_weights_)
-    features = cp.concatenate(
-      (cp.sin(projection), cp.cos(projection)), axis=-1)
-    features /= cp.sqrt(self.n_components)
-    return features.reshape(X.shape[:-1] + (-1,))
+    features = torch.cat(
+      (torch.sin(projection), torch.cos(projection)), dim=-1)
+    features = features / np.sqrt(self.n_components)
+    return features.reshape(tuple(X.shape[:-1]) + (-1,))
 
 # -----------------------------------------------------------------------------
 
@@ -374,7 +375,7 @@ class RandomFourierFeatures1D(StaticFeatures):
     self.n_components_ = self.n_components
     self.random_weights_ = 1. / self.bandwidth * self.random_state.normal(
       size=[self.n_features_, self.n_components_])
-    self.random_shift_ = 2*cp.pi * self.random_state.uniform(
+    self.random_shift_ = 2*math.pi * self.random_state.uniform(
       size=[1, self.n_components_]
     )
 
@@ -392,8 +393,8 @@ class RandomFourierFeatures1D(StaticFeatures):
     """
     projection = utils.matrix_mult(
       X.reshape([-1, self.n_features_]), self.random_weights_)
-    features = cp.cos(projection + self.random_shift_)
-    features *= cp.sqrt(2 / self.n_components)
-    return features.reshape(X.shape[:-1] + (-1,))
+    features = torch.cos(projection + self.random_shift_)
+    features = features * np.sqrt(2 / self.n_components)
+    return features.reshape(tuple(X.shape[:-1]) + (-1,))
 
 # -----------------------------------------------------------------------------

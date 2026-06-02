@@ -1,9 +1,9 @@
 "`SVC` with precomputed kernel."
-import cupy as cp
 import os
 
 from ..static.kernels import Kernel
 from ..utils import ArrayOnCPUOrGPU, ArrayOnCPU
+from ..torch_backend import to_numpy
 from .pre_base import PrecomputedSVCBase
 from sklearn.svm import SVC
 from typing import Dict, Optional
@@ -88,7 +88,7 @@ class PrecomputedKernelSVC(PrecomputedSVCBase):
         # Save features for inference.
         self.X_feat = feature_mat
         # Compute kernel matrix and move to CPU memory.
-        kernel_mat = cp.asnumpy(self._precompute_matrix_mult(feature_mat))
+        kernel_mat = to_numpy(self._precompute_matrix_mult(feature_mat))
       else:
         # Compute kernel matrix.
         kernel_mat = self._precompute_kernel_mat(self.X)
@@ -97,7 +97,7 @@ class PrecomputedKernelSVC(PrecomputedSVCBase):
         # Compute feature matrix.
         feature_mat = self._precompute_feature_mat(X)
         # Compute kernel matrix and move to CPU memory.
-        kernel_mat = cp.asnumpy(self._precompute_matrix_mult(
+        kernel_mat = to_numpy(self._precompute_matrix_mult(
           feature_mat, self.X_feat))
       else:
         # Compute kernel matrix.

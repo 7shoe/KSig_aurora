@@ -1,8 +1,9 @@
 "`SVC` with precomputed kernel."
-import cupy as cp
 import numpy as np
+import torch
 
 from ..utils import ArrayOnCPUOrGPU, ArrayOnCPU, ArrayOnGPU
+from ..torch_backend import to_numpy
 from abc import ABCMeta, abstractmethod
 from math import ceil
 from sklearn.base import BaseEstimator, ClassifierMixin
@@ -166,7 +167,7 @@ class PrecomputedSVCBase(BaseEstimator, ClassifierMixin, metaclass=ABCMeta):
         feature_lst.append(self.kernel.transform(
           X[i_lower:i_upper], return_on_gpu=True))
       # Concatenate feature blocks.
-      feature_mat = cp.concatenate(feature_lst, axis=0)
+      feature_mat = torch.cat(feature_lst, dim=0)
       # Return the feature matrix.
     return feature_mat
 
@@ -198,7 +199,7 @@ class PrecomputedSVCBase(BaseEstimator, ClassifierMixin, metaclass=ABCMeta):
             j * _MAT_MUL_BSIZE, min((j+1) * _MAT_MUL_BSIZE, num_examples))
           _prod_mat = X[i_lower:i_upper] @ X[j_lower:j_upper].T
           if isinstance(_prod_mat, ArrayOnGPU):
-            _prod_mat = cp.asnumpy(_prod_mat)
+            _prod_mat = to_numpy(_prod_mat)
           prod_mat[i_lower:i_upper, j_lower:j_upper] = _prod_mat
           prod_mat[j_lower:j_upper, i_lower:i_upper] = _prod_mat.T[:, :]
     else:
@@ -217,7 +218,7 @@ class PrecomputedSVCBase(BaseEstimator, ClassifierMixin, metaclass=ABCMeta):
             j * _MAT_MUL_BSIZE, min((j+1) * _MAT_MUL_BSIZE, num_examples2))
           _prod_mat = X[i_lower:i_upper] @ X2[j_lower:j_upper].T
           if isinstance(_prod_mat, ArrayOnGPU):
-            _prod_mat = cp.asnumpy(_prod_mat)
+            _prod_mat = to_numpy(_prod_mat)
           prod_mat[i_lower:i_upper, j_lower:j_upper] = _prod_mat
     # Return the precomputed matrix product.
     return prod_mat
@@ -277,7 +278,7 @@ class PrecomputedSVCBase(BaseEstimator, ClassifierMixin, metaclass=ABCMeta):
     y_pred = self.model.predict(model_inp)
     # Return predicted classes.
     if isinstance(y_pred, ArrayOnGPU):
-      y_pred = cp.asnumpy(y_pred)
+      y_pred = to_numpy(y_pred)
     return y_pred
 
 # ------------------------------------------------------------------------------

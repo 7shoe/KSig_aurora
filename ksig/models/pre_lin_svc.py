@@ -1,12 +1,24 @@
 "`LinearSVC` with precomputed features."
-import cupy as cp
+import warnings
+
+import numpy as np
+import torch
 
 from ..static.features import KernelFeatures
 from ..utils import ArrayOnCPUOrGPU, ArrayOnCPU, ArrayOnGPU
+from ..torch_backend import as_tensor, to_numpy
 from .pre_base import PrecomputedSVCBase
-from cuml.svm import LinearSVC as LinearSVCOnGPU
 from sklearn.svm import LinearSVC
 from typing import Dict, Optional
+
+# cuML is NVIDIA/CuPy-only and optional in the torch port: import lazily so the
+# same code runs on XPU / MPS / CPU (TORCH_PORT Sec. 8).
+try:
+  from cuml.svm import LinearSVC as LinearSVCOnGPU
+  _HAS_CUML = True
+except ImportError:
+  LinearSVCOnGPU = None
+  _HAS_CUML = False
 
 
 # Default `LinearSVC` hyperparameter values.
@@ -63,11 +75,26 @@ class PrecomputedFeatureLinSVC(PrecomputedSVCBase):
   def _get_svc_model(self) -> object:
     """Returns a new instance of a linear SVC model.
 
+    Falls back to the sklearn `LinearSVC` when the GPU path was requested but
+    cuML is unavailable (e.g. on XPU / MPS / CPU), so the same script runs
+    everywhere.
+
     Returns:
       An instance of a linear SVC model, which is to be fitted to the data.
     """
-    return (LinearSVCOnGPU(**self.svc_hparams) if self.on_gpu else
-            LinearSVC(**self.svc_hparams))
+    if self.on_gpu and _HAS_CUML:
+      return LinearSVCOnGPU(**self.svc_hparams)
+    if self.on_gpu and not _HAS_CUML:
+      warnings.warn('cuML is unavailable; falling back to `sklearn.svm.'
+                    'LinearSVC` on the CPU. Set `on_gpu=False` to silence.')
+      # cuML-only hparams (e.g. no `dual`) may not be accepted by sklearn; keep
+      # only those sklearn understands by re-applying its safe defaults.
+      hparams = {k: v for k, v in self.svc_hparams.items()
+                 if k in ('fit_intercept', 'tol', 'C', 'max_iter',
+                          'loss', 'penalty', 'dual')}
+      hparams.setdefault('dual', False)
+      return LinearSVC(**hparams)
+    return LinearSVC(**self.svc_hparams)
 
   def _precompute_model_inputs(self, X: Optional[ArrayOnCPUOrGPU] = None
                               ) -> ArrayOnCPU:
@@ -88,11 +115,12 @@ class PrecomputedFeatureLinSVC(PrecomputedSVCBase):
       feature_mat = self._precompute_feature_mat(self.X)
     else:  # Testing.
       feature_mat = self._precompute_feature_mat(X)
-    # Move feature matrix to the required device.
-    if self.on_gpu and not isinstance(feature_mat, ArrayOnGPU):
-      feature_mat = cp.asarray(feature_mat)
-    elif not self.on_gpu and not isinstance(feature_mat, ArrayOnCPU):
-      feature_mat = cp.asnumpy(feature_mat)
-    return feature_mat
+    # cuML consumes cupy arrays; sklearn (the fallback) consumes numpy. The
+    # feature matrix here is a torch tensor (`return_on_gpu=True`), so unless we
+    # are on the real cuML path, hand sklearn a host numpy array.
+    if self.on_gpu and _HAS_CUML:
+      import cupy as cp  # only reachable on an NVIDIA/CuPy stack.
+      return cp.asarray(to_numpy(feature_mat))
+    return to_numpy(feature_mat)
 
 # ------------------------------------------------------------------------------

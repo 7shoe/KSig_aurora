@@ -1,7 +1,7 @@
 """Signature kernels for sequential data."""
 
-import cupy as cp
 import numpy as np
+import torch
 import warnings
 
 from abc import ABCMeta
@@ -16,6 +16,7 @@ from .projections import RandomProjection
 from .static.kernels import Kernel, StaticKernel
 from .static.features import KernelFeatures, StaticFeatures
 from .utils import _EPS, ArrayOnGPU, ArrayOnCPUOrGPU, RandomStateOrSeed
+from .torch_backend import as_tensor, eps_for
 
 
 # ------------------------------------------------------------------------------
@@ -173,7 +174,7 @@ class SignatureKernel(SignatureBase):
       Diagonal entries of the signature kernel matrix K(X, X).
     """
     if self.normalize:
-      return cp.full((X.shape[0],), 1.)
+      return torch.full((X.shape[0],), 1., dtype=X.dtype, device=X.device)
     else:
       return self._compute_kernel(X, diag=True)
 
@@ -192,25 +193,25 @@ class SignatureKernel(SignatureBase):
       if Y is None:
         K_Xd = utils.matrix_diag(K)
         if hasattr(self, 'is_log_space') and self.is_log_space:
-          K -= 1./2 * (K_Xd[..., :, None] + K_Xd[..., None, :])
+          K = K - 1./2 * (K_Xd[..., :, None] + K_Xd[..., None, :])
         else:
-          K_Xd_sqrt = cp.maximum(utils.robust_sqrt(K_Xd), _EPS)
-          K /= K_Xd_sqrt[..., :, None] * K_Xd_sqrt[..., None, :]
+          K_Xd_sqrt = torch.clamp(utils.robust_sqrt(K_Xd), min=_EPS)
+          K = K / (K_Xd_sqrt[..., :, None] * K_Xd_sqrt[..., None, :])
       else:
         K_Xd = self._compute_kernel(X, diag=True)
         K_Yd = self._compute_kernel(Y, diag=True)
         if hasattr(self, 'is_log_space') and self.is_log_space:
-          K -= 1./2 * (K_Xd[..., :, None] + K_Yd[..., None, :])
+          K = K - 1./2 * (K_Xd[..., :, None] + K_Yd[..., None, :])
         else:
-          K_Xd_sqrt = cp.maximum(utils.robust_sqrt(K_Xd), _EPS)
-          K_Yd_sqrt = cp.maximum(utils.robust_sqrt(K_Yd), _EPS)
-          K /= K_Xd_sqrt[..., :, None] * K_Yd_sqrt[..., None, :]
+          K_Xd_sqrt = torch.clamp(utils.robust_sqrt(K_Xd), min=_EPS)
+          K_Yd_sqrt = torch.clamp(utils.robust_sqrt(K_Yd), min=_EPS)
+          K = K / (K_Xd_sqrt[..., :, None] * K_Yd_sqrt[..., None, :])
     # If log-space, then exponentiate now.
     if hasattr(self, 'is_log_space') and self.is_log_space:
-      K = cp.exp(K)
+      K = torch.exp(K)
     # If there is an `n_levels+1` axis in the beginning, do averaging.
     if K.ndim == 3:
-      K = cp.mean(K, axis=0)
+      K = torch.mean(K, dim=0)
     return K
 
 # ------------------------------------------------------------------------------
@@ -352,10 +353,11 @@ class SignatureFeatures(SignatureBase, KernelFeatures):
       U, self.n_levels, order=self.order, difference=self.difference,
       return_levels=self.normalize, projections=self.projections_)
     if self.normalize:
-      P_norms = [cp.maximum(
-        utils.robust_sqrt(utils.squared_norm(p, axis=-1)), _EPS) for p in P]
+      P_norms = [torch.clamp(
+        utils.robust_sqrt(utils.squared_norm(p, axis=-1)), min=_EPS)
+        for p in P]
       P = [p / P_norms[i][..., None] for i, p in enumerate(P)]
-      P = cp.concatenate(P, axis=-1) / cp.sqrt(self.n_levels + 1)
+      P = torch.cat(P, dim=-1) / np.sqrt(self.n_levels + 1)
     return P
 
 
@@ -448,14 +450,16 @@ class RandomWarpingSeries(KernelFeatures):
     Args:
       X: An array of sequences on CPU or GPU.
     """
-    X = cp.asarray(X).reshape([-1, X.shape[-1]])
-    self.data_means_ = cp.mean(X, axis=0)
-    self.data_stdevs_ = cp.std(X, axis=0)
+    X = as_tensor(X).reshape([-1, X.shape[-1]])
+    self.data_means_ = torch.mean(X, dim=0)
+    # cupy's `std` is the population std (ddof=0); torch defaults to unbiased.
+    self.data_stdevs_ = torch.std(X, dim=0, unbiased=False)
     self.warp_lens_ = self.random_state.randint(
       1, self.max_warp+1, size=[self.n_components])
     self.warp_series_ = self.data_means_[None, :] + self.stdev * (
       self.data_stdevs_[None, :] * self.random_state.normal(
-        size=[int(cp.sum(self.warp_lens_)), self.n_features_], dtype=X.dtype))
+        size=[int(torch.sum(self.warp_lens_)), self.n_features_],
+        dtype=X.dtype))
 
 
   def _compute_features(self, X: ArrayOnGPU) -> ArrayOnGPU:
@@ -473,7 +477,7 @@ class RandomWarpingSeries(KernelFeatures):
     if self.normalize:
     # Normalize the features.
       P_norm = utils.robust_sqrt(utils.squared_norm(P, axis=-1))
-      P /= cp.maximum(P_norm, _EPS)[..., None]
+      P = P / torch.clamp(P_norm, min=_EPS)[..., None]
     return P
   
 # -----------------------------------------------------------------------------

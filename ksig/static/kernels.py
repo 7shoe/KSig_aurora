@@ -1,7 +1,7 @@
 """Static (state-space) kernels."""
 
-import cupy as cp
 import numpy as np
+import torch
 
 from abc import ABCMeta, abstractmethod
 from sklearn.base import BaseEstimator
@@ -9,6 +9,7 @@ from typing import Optional
 
 from .. import utils
 from ..utils import _EPS, ArrayOnGPU, ArrayOnCPUOrGPU
+from ..torch_backend import as_tensor, eps_for, to_numpy
 
 
 # ------------------------------------------------------------------------------
@@ -85,15 +86,15 @@ class Kernel(BaseEstimator, metaclass=ABCMeta):
     Returns:
       A kernel matrix or its diagonal entries on CPU or GPU.
     """
-    # Validate data and move it to GPU.
-    X = cp.asarray(self._validate_data(X))
+    # Validate data and move it to the compute device.
+    X = as_tensor(self._validate_data(X))
     if diag:
       K = self._Kdiag(X)
     else:
-      Y = cp.asarray(self._validate_data(Y)) if Y is not None else None
+      Y = as_tensor(self._validate_data(Y)) if Y is not None else None
       K =  self._K(X, Y)
     if not return_on_gpu:
-      K = cp.asnumpy(K)
+      K = to_numpy(K)
     return K
 
 
@@ -191,7 +192,7 @@ class PolynomialKernel(StaticKernel):
     Returns:
       Poly. kernel matrix between `X` and `Y`, or `X` and `X` if `Y is None`.
     """
-    return self.scale * cp.power(
+    return self.scale * torch.pow(
       utils.matrix_mult(X, Y, transpose_Y=True) + self.gamma, self.degree)
 
   def _Kdiag(self, X: ArrayOnGPU) -> ArrayOnGPU:
@@ -203,7 +204,7 @@ class PolynomialKernel(StaticKernel):
     Returns:
       Diagonal entries of the poly. kernel matrix of `X`.
     """
-    return self.scale * cp.power(
+    return self.scale * torch.pow(
       utils.squared_norm(X, axis=-1) + self.gamma, self.degree)
 
 
@@ -239,7 +240,7 @@ class StationaryKernel(StaticKernel):
     Returns:
       Diagonal entries of the kernel matrix.
     """
-    return cp.full((X.shape[0],), 1)
+    return torch.full((X.shape[0],), 1., dtype=X.dtype, device=X.device)
 
 
 class RBFKernel(StationaryKernel):
@@ -255,9 +256,9 @@ class RBFKernel(StationaryKernel):
     Returns:
       The kernel matrix between `X` and `Y`, or `X` and `X` if `Y is None`.
     """
-    D2_scaled = utils.squared_euclid_dist(X, Y) / cp.maximum(
+    D2_scaled = utils.squared_euclid_dist(X, Y) / max(
       2*self.bandwidth**2, _EPS)
-    return cp.exp(-D2_scaled)
+    return torch.exp(-D2_scaled)
 
 
 class Matern12Kernel(StationaryKernel):
@@ -273,8 +274,8 @@ class Matern12Kernel(StationaryKernel):
     Returns:
       The kernel matrix between `X` and `Y`, or `X` and `X` if `Y is None`.
     """
-    D_scaled = utils.euclid_dist(X, Y) / cp.maximum(self.bandwidth, _EPS)
-    return cp.exp(-D_scaled)
+    D_scaled = utils.euclid_dist(X, Y) / max(self.bandwidth, _EPS)
+    return torch.exp(-D_scaled)
 
 
 class Matern32Kernel(StationaryKernel):
@@ -290,10 +291,10 @@ class Matern32Kernel(StationaryKernel):
     Returns:
       The kernel matrix between `X` and `Y`, or `X` and `X` if `Y is None`.
     """
-    sqrt3 = cp.sqrt(3.)
-    D_scaled = sqrt3 * utils.euclid_dist(X, Y) / cp.maximum(
+    sqrt3 = np.sqrt(3.)
+    D_scaled = sqrt3 * utils.euclid_dist(X, Y) / max(
       self.bandwidth, _EPS)
-    return (1. + D_scaled) * cp.exp(-D_scaled)
+    return (1. + D_scaled) * torch.exp(-D_scaled)
 
 
 class Matern52Kernel(StationaryKernel):
@@ -309,10 +310,10 @@ class Matern52Kernel(StationaryKernel):
     Returns:
       The kernel matrix between `X` and `Y`, or `X` and `X` if `Y is None`.
     """
-    D2_scaled = 5 * utils.squared_euclid_dist(X, Y) / cp.maximum(
+    D2_scaled = 5 * utils.squared_euclid_dist(X, Y) / max(
       self.bandwidth**2, _EPS)
     D_scaled = utils.robust_sqrt(D2_scaled)
-    return (1. + D_scaled + D2_scaled / 3.) * cp.exp(-D_scaled)
+    return (1. + D_scaled + D2_scaled / 3.) * torch.exp(-D_scaled)
 
 
 class RationalQuadraticKernel(StationaryKernel):
@@ -338,9 +339,9 @@ class RationalQuadraticKernel(StationaryKernel):
     Returns:
       The kernel matrix between `X` and `Y`, or `X` and `X` if `Y is None`.
     """
-    D2_scaled = utils.squared_euclid_dist(X, Y) / cp.maximum(
+    D2_scaled = utils.squared_euclid_dist(X, Y) / max(
       2 * self.alpha * self.bandwidth**2, _EPS)
-    return cp.power((1 + D2_scaled), -self.alpha)
+    return torch.pow((1 + D2_scaled), -self.alpha)
 
 
 # -----------------------------------------------------------------------------

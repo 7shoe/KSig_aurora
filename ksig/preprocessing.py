@@ -1,13 +1,34 @@
 """Sequential data preprocessing utilities."""
 
-import cupy as cp
 import numpy as np
+import torch
 
-from enum import Enum
 from sklearn.base import BaseEstimator, TransformerMixin
 from typing import List, Optional, Union
 
 from .utils import ArrayOnCPUOrGPU, ArrayOnGPU, check_positive_value
+from .torch_backend import as_tensor, to_numpy
+
+
+# -----------------------------------------------------------------------------
+# Helpers for the torch/numpy dispatch.
+#
+# ``torch`` has no ``interp`` / ``apply_along_axis``; per ``docs/TORCH_PORT.md``
+# Sec. 5.2 the interpolation paths are done on the host with numpy and moved
+# back to a tensor when the input was a tensor. The non-interp ops dispatch to
+# torch or numpy depending on the input array type so the output type matches.
+# -----------------------------------------------------------------------------
+
+def _is_torch(x) -> bool:
+  return isinstance(x, torch.Tensor)
+
+
+def _interp_axis0(x_np: np.ndarray, target_len: int) -> np.ndarray:
+  """Channel-wise linear interpolation of a `[L, d]` sequence to `target_len`."""
+  return np.stack(
+    [np.interp(np.linspace(0, 1, target_len),
+               np.linspace(0, 1, x_np.shape[0]), x_np[:, i_c])
+     for i_c in range(x_np.shape[1])], axis=1)
 
 
 # -----------------------------------------------------------------------------
@@ -31,7 +52,7 @@ class SequenceTabulator(BaseEstimator, TransformerMixin):
     Args:
       X_seq: An array or list of sequences on CPU or GPU.
     """
-    max_seq_len = np.max([x.shape[0] for x in X_seq])
+    max_seq_len = int(np.max([x.shape[0] for x in X_seq]))
     self.max_len_ = (min(self.max_len, max_seq_len)
                      if self.max_len is not None else max_seq_len)
     return self
@@ -46,24 +67,19 @@ class SequenceTabulator(BaseEstimator, TransformerMixin):
     Returns:
       A tabulated array of sequences on CPU or GPU.
     """
-    # Correct linear algebra package to use.
-    xp = cp if isinstance(X_seq[0], ArrayOnGPU) else np
-    needs_interp = xp.any(xp.asarray([
-      x.shape[0] != X_seq[0].shape[0] or xp.any(xp.isnan(x))
-      or x.shape[0] > self.max_len_ for x in X_seq]))
-    if needs_interp.item():
-      # Filter NANs.
-      X_seq = [x[xp.all(~xp.isnan(x), axis=-1)] for x in X_seq]
-      # Channel-wise interpolation.
-      X_seq = [
-        xp.stack([xp.interp(
-          xp.linspace(0, 1, self.max_len_),
-          xp.linspace(0, 1, x.shape[0]), x[:, i_c])
-          for i_c in range(x.shape[1])], axis=1)
-        for i, x in enumerate(X_seq)]
-    if isinstance(X_seq, list):
-      X_seq = xp.stack(X_seq, axis=0)
-    return X_seq
+    was_torch = _is_torch(X_seq[0]) if len(X_seq) else _is_torch(X_seq)
+    device = X_seq[0].device if was_torch else None
+    # Interpolation has no torch equivalent: work on the host in numpy.
+    seqs = [to_numpy(x) for x in X_seq]
+    needs_interp = any(
+      x.shape[0] != seqs[0].shape[0] or np.any(np.isnan(x))
+      or x.shape[0] > self.max_len_ for x in seqs)
+    if needs_interp:
+      # Filter NaN rows, then channel-wise interpolate to `max_len_`.
+      seqs = [x[np.all(~np.isnan(x), axis=-1)] for x in seqs]
+      seqs = [_interp_axis0(x, self.max_len_) for x in seqs]
+    out = np.stack(seqs, axis=0)
+    return as_tensor(out, device=device) if was_torch else out
 
 
 # -----------------------------------------------------------------------------
@@ -97,9 +113,9 @@ class SequenceAugmentor(BaseEstimator, TransformerMixin):
     Args:
       X_seq: An array sequences on CPU or GPU.
     """
-    xp = cp if isinstance(X_seq, ArrayOnGPU) else np
     if self.normalize:
-      self.scale_ = xp.max(X_seq)
+      self.scale_ = (torch.max(X_seq) if _is_torch(X_seq)
+                     else np.max(X_seq))
     return self
 
   def transform(self, X_seq: ArrayOnCPUOrGPU) -> ArrayOnCPUOrGPU:
@@ -111,28 +127,45 @@ class SequenceAugmentor(BaseEstimator, TransformerMixin):
     Returns:
         An augmented array of sequences on CPU or GPU.
     """
-    xp = cp if isinstance(X_seq, ArrayOnGPU) else np
-    # Normalization.
+    is_torch = _is_torch(X_seq)
+    # Normalization (avoid in-place to not mutate the caller's array).
     if self.normalize:
-      X_seq /= self.scale_
+      X_seq = X_seq / self.scale_
     # Lead-lag augmentation.
     if self.lead_lag:
-      X_seq = xp.repeat(X_seq, 2, axis=1)
-      X_seq = xp.concatenate((X_seq[:, 1:], X_seq[:, :-1]), axis=-1)
+      if is_torch:
+        X_seq = torch.repeat_interleave(X_seq, 2, dim=1)
+        X_seq = torch.cat((X_seq[:, 1:], X_seq[:, :-1]), dim=-1)
+      else:
+        X_seq = np.repeat(X_seq, 2, axis=1)
+        X_seq = np.concatenate((X_seq[:, 1:], X_seq[:, :-1]), axis=-1)
     # Time augmentation.
     if self.add_time and self.max_time > 1e-6:
-      time = xp.linspace(0., self.max_time, X_seq.shape[1])
-      X_seq = xp.concatenate((
-        xp.tile(time[None, :, None], [X_seq.shape[0], 1, 1]), X_seq), axis=-1)
+      if is_torch:
+        time = torch.linspace(0., self.max_time, X_seq.shape[1],
+                              dtype=X_seq.dtype, device=X_seq.device)
+        time = torch.tile(time[None, :, None], (X_seq.shape[0], 1, 1))
+        X_seq = torch.cat((time, X_seq), dim=-1)
+      else:
+        time = np.linspace(0., self.max_time, X_seq.shape[1])
+        time = np.tile(time[None, :, None], [X_seq.shape[0], 1, 1])
+        X_seq = np.concatenate((time, X_seq), axis=-1)
     # Basepoint augmentation.
     if self.basepoint:
-      X_seq = xp.concatenate((xp.zeros_like(X_seq[:, :1]), X_seq), axis=1)
-    # If after augmentation exceeded max length, interpolate back.
+      if is_torch:
+        X_seq = torch.cat((torch.zeros_like(X_seq[:, :1]), X_seq), dim=1)
+      else:
+        X_seq = np.concatenate((np.zeros_like(X_seq[:, :1]), X_seq), axis=1)
+    # If after augmentation exceeded max length, interpolate back (numpy host
+    # path; torch has no `interp`/`apply_along_axis`).
     if self.max_len is not None and X_seq.shape[1] > self.max_len:
-      current = xp.linspace(0, 1, X_seq.shape[1])
-      target = xp.linspace(0, 1, self.max_len)
-      interp_fn = lambda x: xp.interp(target, current, x)
-      X_seq = xp.apply_along_axis(interp_fn, 1, X_seq)
+      device = X_seq.device if is_torch else None
+      X_np = to_numpy(X_seq)
+      current = np.linspace(0, 1, X_np.shape[1])
+      target = np.linspace(0, 1, self.max_len)
+      interp_fn = lambda x: np.interp(target, current, x)
+      X_np = np.apply_along_axis(interp_fn, 1, X_np)
+      X_seq = as_tensor(X_np, device=device) if is_torch else X_np
     return X_seq
 
 

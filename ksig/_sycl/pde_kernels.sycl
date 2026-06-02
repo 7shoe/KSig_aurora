@@ -1,0 +1,249 @@
+// Native SYCL DP kernels for Aurora XPU (TORCH_PORT Sec. 10.4).
+//
+// One work-group per sequence pair (x, y); the group's lanes cooperate along a
+// single antidiagonal, holding the trailing three antidiagonals in device local
+// memory (three local_accessors whose ROLES rotate each sweep -- the canonical
+// SYCL idiom, avoiding the packed 3*k+/-offset arithmetic of the old Numba
+// code). The whole DP runs in ONE launch (vs. l_X+l_Y-1 eager torch launches).
+//
+// These are the *non-fused* 1:1 ports of the three torch wavefronts; they must
+// agree with those wavefronts within the f64 band before being dispatched
+// (TORCH_PORT Sec. 12). The fused RBF/SigPDE variant (Sec. 10.5) is a follow-up.
+//
+// NOTE: this file is compiled by icpx -fsycl on an Aurora *compute node* with an
+// XPU visible. It cannot be built on a login/UAN node (no device). PVC has
+// aspect::fp64; group_barrier / local_accessor require an nd_range launch hit in
+// converged control flow (the loop structure below satisfies that).
+// Device kernels only — deliberately free of the ATen/torch tensor library.
+// Referencing at::Tensor here pulls c10::UndefinedTensorImpl::_singleton, an
+// absolute relocation the SYCL host-compiler pass cannot satisfy on this stack,
+// so all torch glue (tensor ops, AT_DISPATCH, pybind) lives in bindings.cpp and
+// this TU only takes raw device pointers + sizes, running on torch's XPU queue.
+#include <sycl/sycl.hpp>
+#include <c10/xpu/XPUStream.h>
+
+#include <algorithm>
+#include <limits>
+#include <cstdint>
+
+using namespace sycl;
+
+// Named kernel tags: this icpx build rejects unnamed kernel lambdas, and torch's
+// mixed-compilation path (-fsycl-host-compiler) forbids -fsycl-unnamed-lambda,
+// so each parallel_for is given an explicit (templated) kernel name instead.
+template <typename scalar_t> class SigPdeKernel;
+template <typename scalar_t> class GakLogKernel;
+template <typename scalar_t> class RwsDtwKernel;
+
+// Lane count on the widest antidiagonal (+1 pad), and a sane work-group size.
+static inline int64_t diag_capacity(int64_t lX, int64_t lY) {
+  return std::min(lX, lY) + 1;
+}
+static inline int wg_size(int64_t lX, int64_t lY) {
+  return (int)std::min<int64_t>(std::min(lX, lY), 256);
+}
+
+// Map a cell row i on antidiagonal d to its lane on that diagonal's buffer.
+static inline int64_t diag_i_lo(int64_t d, int64_t lY) {
+  return std::max<int64_t>(0, d - (lY - 1));
+}
+
+// ---------------------------------------------------------------------------
+// SigPDE: K(i,j) = (up+left)*(1 + m/2 + m^2/12) - diag*(1 - m^2/12); borders 1.
+// ---------------------------------------------------------------------------
+template <typename scalar_t>
+static void sig_pde_impl(queue& q, const scalar_t* M, scalar_t* K,
+                         int64_t nX, int64_t nY, int64_t lX, int64_t lY) {
+  const int64_t D = lX + lY - 1;
+  const int64_t Ld = diag_capacity(lX, lY);
+  const int wg = wg_size(lX, lY);
+  q.submit([&](handler& h) {
+    local_accessor<scalar_t, 1> prev2(range<1>(Ld), h);  // diagonal d-2
+    local_accessor<scalar_t, 1> prev (range<1>(Ld), h);  // diagonal d-1
+    local_accessor<scalar_t, 1> cur  (range<1>(Ld), h);  // diagonal d
+    h.parallel_for<SigPdeKernel<scalar_t>>(
+      nd_range<3>(range<3>(nX, nY, wg), range<3>(1, 1, wg)),
+      [=](nd_item<3> it) {
+        const int64_t x = it.get_global_id(0), y = it.get_global_id(1);
+        const int     lid = (int)it.get_local_id(2);
+        const int64_t base = (x * nY + y) * lX * lY;
+        auto g = it.get_group();
+        for (int64_t d = 0; d < D; ++d) {
+          const int64_t i_lo = diag_i_lo(d, lY);
+          const int64_t i_hi = std::min<int64_t>(d, lX - 1);
+          const int64_t i_lo1 = diag_i_lo(d - 1, lY);
+          const int64_t i_lo2 = diag_i_lo(d - 2, lY);
+          for (int64_t i = i_lo + lid; i <= i_hi; i += wg) {
+            const int64_t j = d - i;
+            const int     a = (int)(i - i_lo);
+            const scalar_t m = M[base + i * lY + j];
+            const scalar_t up   = (i == 0) ? (scalar_t)1 : prev[(i - 1) - i_lo1];
+            const scalar_t left = (j == 0) ? (scalar_t)1 : prev[ i      - i_lo1];
+            const scalar_t dg   = (i == 0 || j == 0) ? (scalar_t)1
+                                                     : prev2[(i - 1) - i_lo2];
+            cur[a] = (up + left) * (1 + (scalar_t)0.5 * m + m * m / (scalar_t)12)
+                   - dg * (1 - m * m / (scalar_t)12);
+          }
+          group_barrier(g);
+          for (int64_t a = lid; a < Ld; a += wg) { prev2[a] = prev[a]; prev[a] = cur[a]; }
+          group_barrier(g);
+        }
+        if (g.leader()) {
+          const int64_t i_loLast = diag_i_lo(D - 1, lY);
+          K[x * nY + y] = prev[(lX - 1) - i_loLast];
+        }
+      });
+  });
+}
+
+// ---------------------------------------------------------------------------
+// GAK (log-space): logK = logM + logsumexp3(up,left,diag); borders -inf, seed 0.
+// `logM` is precomputed on the host (M/(2-M) then log(clamp(.,eps))).
+// ---------------------------------------------------------------------------
+template <typename scalar_t>
+static inline scalar_t lse3(scalar_t a, scalar_t b, scalar_t c) {
+  const scalar_t NEG = -std::numeric_limits<scalar_t>::infinity();
+  scalar_t m = sycl::fmax(a, sycl::fmax(b, c));
+  if (m == NEG) return NEG;
+  return m + sycl::log(sycl::exp(a - m) + sycl::exp(b - m) + sycl::exp(c - m));
+}
+
+template <typename scalar_t>
+static void gak_log_impl(queue& q, const scalar_t* logM, scalar_t* logK,
+                         int64_t nX, int64_t nY, int64_t lX, int64_t lY) {
+  const int64_t D = lX + lY - 1;
+  const int64_t Ld = diag_capacity(lX, lY);
+  const int wg = wg_size(lX, lY);
+  const scalar_t NEG = -std::numeric_limits<scalar_t>::infinity();
+  q.submit([&](handler& h) {
+    local_accessor<scalar_t, 1> prev2(range<1>(Ld), h);
+    local_accessor<scalar_t, 1> prev (range<1>(Ld), h);
+    local_accessor<scalar_t, 1> cur  (range<1>(Ld), h);
+    h.parallel_for<GakLogKernel<scalar_t>>(
+      nd_range<3>(range<3>(nX, nY, wg), range<3>(1, 1, wg)),
+      [=](nd_item<3> it) {
+        const int64_t x = it.get_global_id(0), y = it.get_global_id(1);
+        const int     lid = (int)it.get_local_id(2);
+        const int64_t base = (x * nY + y) * lX * lY;
+        auto g = it.get_group();
+        for (int64_t d = 0; d < D; ++d) {
+          const int64_t i_lo = diag_i_lo(d, lY);
+          const int64_t i_hi = std::min<int64_t>(d, lX - 1);
+          const int64_t i_lo1 = diag_i_lo(d - 1, lY);
+          const int64_t i_lo2 = diag_i_lo(d - 2, lY);
+          for (int64_t i = i_lo + lid; i <= i_hi; i += wg) {
+            const int64_t j = d - i;
+            const int     a = (int)(i - i_lo);
+            const scalar_t lm = logM[base + i * lY + j];
+            const scalar_t up   = (i == 0) ? NEG : prev[(i - 1) - i_lo1];
+            const scalar_t left = (j == 0) ? NEG : prev[ i      - i_lo1];
+            const scalar_t dg   = (i == 0 && j == 0) ? (scalar_t)0
+                                : (i == 0 || j == 0) ? NEG
+                                                     : prev2[(i - 1) - i_lo2];
+            cur[a] = lm + lse3<scalar_t>(up, left, dg);
+          }
+          group_barrier(g);
+          for (int64_t a = lid; a < Ld; a += wg) { prev2[a] = prev[a]; prev[a] = cur[a]; }
+          group_barrier(g);
+        }
+        if (g.leader()) {
+          const int64_t i_loLast = diag_i_lo(D - 1, lY);
+          logK[x * nY + y] = prev[(lX - 1) - i_loLast];
+        }
+      });
+  });
+}
+
+// ---------------------------------------------------------------------------
+// RWS/DTW: P(i,j) = D(i,j) + min(up,left,diag); borders +inf, seed 0.
+// Variable warp lengths: series y occupies D columns [seg[y], seg[y+1]); the
+// terminal is read at the per-series length l_Y(y) (no padding needed -- each
+// work-group owns one (x,y) pair with its own l_Y).
+// ---------------------------------------------------------------------------
+template <typename scalar_t>
+static void rws_dtw_impl(queue& q, const scalar_t* Dd, scalar_t* P,
+                         const int64_t* seg, int64_t nX, int64_t nY,
+                         int64_t lX, int64_t sumLY, int64_t lY_max) {
+  const int64_t Dmax = lX + lY_max - 1;
+  const int64_t Ld = diag_capacity(lX, lY_max);
+  const int wg = wg_size(lX, lY_max);
+  const scalar_t POS = std::numeric_limits<scalar_t>::infinity();
+  q.submit([&](handler& h) {
+    local_accessor<scalar_t, 1> prev2(range<1>(Ld), h);
+    local_accessor<scalar_t, 1> prev (range<1>(Ld), h);
+    local_accessor<scalar_t, 1> cur  (range<1>(Ld), h);
+    h.parallel_for<RwsDtwKernel<scalar_t>>(
+      nd_range<3>(range<3>(nX, nY, wg), range<3>(1, 1, wg)),
+      [=](nd_item<3> it) {
+        const int64_t x = it.get_global_id(0), y = it.get_global_id(1);
+        const int     lid = (int)it.get_local_id(2);
+        const int64_t y0 = seg[y];
+        const int64_t lY = seg[y + 1] - seg[y];   // this series' true length
+        const int64_t Diter = lX + lY - 1;
+        auto g = it.get_group();
+        for (int64_t d = 0; d < Diter; ++d) {
+          const int64_t i_lo = diag_i_lo(d, lY);
+          const int64_t i_hi = std::min<int64_t>(d, lX - 1);
+          const int64_t i_lo1 = diag_i_lo(d - 1, lY);
+          const int64_t i_lo2 = diag_i_lo(d - 2, lY);
+          for (int64_t i = i_lo + lid; i <= i_hi; i += wg) {
+            const int64_t j = d - i;
+            const int     a = (int)(i - i_lo);
+            const scalar_t dij = Dd[(x * lX + i) * sumLY + (y0 + j)];
+            const scalar_t up   = (i == 0) ? POS : prev[(i - 1) - i_lo1];
+            const scalar_t left = (j == 0) ? POS : prev[ i      - i_lo1];
+            const scalar_t dg   = (i == 0 && j == 0) ? (scalar_t)0
+                                : (i == 0 || j == 0) ? POS
+                                                     : prev2[(i - 1) - i_lo2];
+            cur[a] = dij + sycl::fmin(sycl::fmin(up, left), dg);
+          }
+          group_barrier(g);
+          for (int64_t a = lid; a < Ld; a += wg) { prev2[a] = prev[a]; prev[a] = cur[a]; }
+          group_barrier(g);
+        }
+        if (g.leader()) {
+          const int64_t i_loLast = diag_i_lo(Diter - 1, lY);
+          P[x * nY + y] = prev[(lX - 1) - i_loLast];
+        }
+      });
+  });
+}
+
+// ===========================================================================
+// Entry points called from bindings.cpp. They run on torch's own XPU queue so
+// torch orders them against the surrounding ops (no cross-queue hazard). Only
+// raw device pointers + sizes cross the boundary -- no ATen types in this TU.
+// Overloaded on the scalar type so bindings.cpp can dispatch via AT_DISPATCH.
+// ===========================================================================
+static inline queue& torch_queue() {
+  return c10::xpu::getCurrentXPUStream().queue();
+}
+
+void ksig_sig_pde(const double* M, double* K,
+                  int64_t nX, int64_t nY, int64_t lX, int64_t lY) {
+  sig_pde_impl<double>(torch_queue(), M, K, nX, nY, lX, lY);
+}
+void ksig_sig_pde(const float* M, float* K,
+                  int64_t nX, int64_t nY, int64_t lX, int64_t lY) {
+  sig_pde_impl<float>(torch_queue(), M, K, nX, nY, lX, lY);
+}
+
+void ksig_gak_log(const double* logM, double* logK,
+                  int64_t nX, int64_t nY, int64_t lX, int64_t lY) {
+  gak_log_impl<double>(torch_queue(), logM, logK, nX, nY, lX, lY);
+}
+void ksig_gak_log(const float* logM, float* logK,
+                  int64_t nX, int64_t nY, int64_t lX, int64_t lY) {
+  gak_log_impl<float>(torch_queue(), logM, logK, nX, nY, lX, lY);
+}
+
+void ksig_rws_dtw(const double* D, double* P, const int64_t* seg,
+                  int64_t nX, int64_t nY, int64_t lX,
+                  int64_t sumLY, int64_t lY_max) {
+  rws_dtw_impl<double>(torch_queue(), D, P, seg, nX, nY, lX, sumLY, lY_max);
+}
+void ksig_rws_dtw(const float* D, float* P, const int64_t* seg,
+                  int64_t nX, int64_t nY, int64_t lX,
+                  int64_t sumLY, int64_t lY_max) {
+  rws_dtw_impl<float>(torch_queue(), D, P, seg, nX, nY, lX, sumLY, lY_max);
+}
