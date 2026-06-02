@@ -85,8 +85,16 @@ def ref_block_text(shape, block, diag_mean):
             "diag mean  : " + str(diag_mean))
 
 
-def scaling_md(stem, ref_key):
+def scaling_md(stem, ref_key, sycl_supported=False):
     sc = REF[ref_key]["scaling"]
+    orange = ("""
+* 🟧 **orange** — the **SYCL** fast-path (this kernel dispatches to `ksig._sycl`),
+  drawn **only if** a build is present (`nb.sycl_available()`); the blue curve is
+  the same kernel with SYCL forced off, so blue-vs-orange is the head-to-head.
+""" if sycl_supported else """
+> This kernel has **no SYCL fast-path** — only SigPDE / GAK / RWS dispatch to
+> `ksig._sycl` — so there is no orange curve here, just green vs blue.
+""")
     return md(stem, 90, f"""
 ## Scaling — green = CUDA reference, blue = this machine
 
@@ -95,18 +103,50 @@ is live, then overlays:
 
 * 🟩 **green** — the frozen reference measured on **{GPU}** (`cuda_reference.json`),
 * 🟦 **blue** — what *this* machine computes now (torch-native on Aurora XPU / CUDA / CPU),
-* 🟧 **orange** — the optional **SYCL** fast-path, drawn **only if** a `ksig._sycl`
-  build is present (`nb.sycl_available()`); if SYCL is never adopted, no orange curve.
+{orange.strip()}
 
 The grid and the knobs at the top of the cell are **tunable** — they default to
 the reference grid so blue lines up with green; widen them to push the frontier.
 """)
 
 
-def scaling_cell_kernel(stem, ref_key, build_expr, n, d, tunables):
+def _sweep_tail(grid_var, loop_var, ref_key, title, sycl_supported):
+    """The blue(/orange) sweep + plot, shared by the kernel/feature cells."""
+    if sycl_supported:
+        return f"""
+# BLUE = torch-native baseline: force the SYCL fast-path OFF so this curve is
+# the eager wavefront (on XPU, SYCL auto-engages by default, which would make
+# blue == orange). A no-op where SYCL is absent.
+nb.enable_sycl(False)
+times = [time_one({loop_var}) for {loop_var} in {grid_var}]
+
+# ORANGE = SYCL fast-path. Drawn ONLY when a SYCL build is available; run the
+# same sweep with the fast-path on, then restore the torch-native default.
+sycl_times = None
+if nb.sycl_available():
+    nb.enable_sycl(True)
+    sycl_times = [time_one({loop_var}) for {loop_var} in {grid_var}]
+    nb.enable_sycl(False)
+
+nb.scaling_plot({grid_var}, times, "{ref_key}", sycl_seconds=sycl_times,
+                title="{title}");
+"""
+    return f"""
+# This kernel has no SYCL fast-path (only SigPDE / GAK / RWS dispatch to
+# ksig._sycl), so there is no orange curve -- just green vs blue.
+times = [time_one({loop_var}) for {loop_var} in {grid_var}]
+nb.scaling_plot({grid_var}, times, "{ref_key}", title="{title}");
+"""
+
+
+def scaling_cell_kernel(stem, ref_key, build_expr, n, d, tunables,
+                        sycl_supported=False):
     """Scaling cell for a deterministic kernel (sweeps sequence length L)."""
     grid = REF[ref_key]["scaling"]["x"]
     tun = "\n".join(tunables)
+    tail = _sweep_tail("L_GRID", "L", ref_key,
+                       f"{ref_key} — wall time vs sequence length",
+                       sycl_supported)
     return code(stem, 91, f"""
 # --- tunable knobs (default to the CUDA-reference grid) ---------------------
 L_GRID = {grid}          # sequence lengths to sweep
@@ -118,25 +158,17 @@ def time_one(L):
     Xs = nb.simulate(N, L, D, seed=1)
     k = {build_expr}
     return nb.timeit(lambda: k(Xs), reps=REPS, device=ENV["device"])
-
-times = [time_one(L) for L in L_GRID]
-
-# Second (orange) curve ONLY when a SYCL build is available.
-sycl_times = None
-if nb.sycl_available():
-    nb.enable_sycl(True)
-    sycl_times = [time_one(L) for L in L_GRID]
-    nb.enable_sycl(False)
-
-nb.scaling_plot(L_GRID, times, "{ref_key}", sycl_seconds=sycl_times,
-                title="{ref_key} — wall time vs sequence length");
-""")
+{tail}""")
 
 
-def scaling_cell_feature(stem, ref_key, build_expr, L, d, tunables):
+def scaling_cell_feature(stem, ref_key, build_expr, L, d, tunables,
+                         sycl_supported=False):
     """Scaling cell for a feature kernel (sweeps n_samples N)."""
     grid = REF[ref_key]["scaling"]["x"]
     tun = "\n".join(tunables)
+    tail = _sweep_tail("N_GRID", "N", ref_key,
+                       f"{ref_key} — wall time vs n_samples",
+                       sycl_supported)
     return code(stem, 91, f"""
 # --- tunable knobs (default to the CUDA-reference grid) ---------------------
 N_GRID = {grid}     # sample counts to sweep (feature methods scale ~linearly)
@@ -149,26 +181,15 @@ def time_one(N):
     k = {build_expr}
     k.fit(Xs)
     return nb.timeit(lambda: k(Xs), reps=REPS, device=ENV["device"])
-
-times = [time_one(N) for N in N_GRID]
-
-# Second (orange) curve ONLY when a SYCL build is available.
-sycl_times = None
-if nb.sycl_available():
-    nb.enable_sycl(True)
-    sycl_times = [time_one(N) for N in N_GRID]
-    nb.enable_sycl(False)
-
-nb.scaling_plot(N_GRID, times, "{ref_key}", sycl_seconds=sycl_times,
-                title="{ref_key} — wall time vs n_samples");
-""")
+{tail}""")
 
 
 # ---------------------------------------------------------------------------
 # 1-3: deterministic full-rank kernels (elementwise-portable correctness).
 # ---------------------------------------------------------------------------
 def build_kernel_nb(stem, ref_key, title, intro, sim_expr, build_expr,
-                    compute_var, scaling_build, n, d, tunables):
+                    compute_var, scaling_build, n, d, tunables,
+                    sycl_supported=False):
     D = REF[ref_key]["demo"]
     cells = [
         md(stem, 0, f"# {title}\n\n{intro}"),
@@ -207,8 +228,9 @@ print("gram shape :", tuple(K.shape))
 print("K[:3,:3]   :\\n", np.round(nb.as_host(K)[:3, :3], 4))
 print("diag mean  :", round(float(np.diag(nb.as_host(K)).mean()), 6))
 """),
-        scaling_md(stem, ref_key),
-        scaling_cell_kernel(stem, ref_key, scaling_build, n, d, tunables),
+        scaling_md(stem, ref_key, sycl_supported),
+        scaling_cell_kernel(stem, ref_key, scaling_build, n, d, tunables,
+                            sycl_supported),
     ]
     write(stem, cells)
 
@@ -217,7 +239,8 @@ print("diag mean  :", round(float(np.diag(nb.as_host(K)).mean()), 6))
 # 4-6: randomised feature maps (portable invariants + Monte-Carlo error).
 # ---------------------------------------------------------------------------
 def build_feature_nb(stem, ref_key, title, intro, sim_expr, build_expr,
-                     scaling_build, L, d, tunables, kind):
+                     scaling_build, L, d, tunables, kind,
+                     sycl_supported=False):
     D = REF[ref_key]["demo"]
     if kind == "approx":           # rfsf / low-rank: compare to the exact kernel
         conv = "  ".join(f"{c['n_components']}:{c['rel_err']}"
@@ -291,8 +314,9 @@ print("min eig    :", round(float(np.linalg.eigvalsh((K + K.T) / 2).min()), 6))
         code(stem, 2, f"X = {sim_expr}\nprint('X shape:', X.shape, '| dtype:', X.dtype)"),
         md(stem, 3, f"## Compute the feature map\n{portab}"),
         code(stem, 3, live),
-        scaling_md(stem, ref_key),
-        scaling_cell_feature(stem, ref_key, scaling_build, L, d, tunables),
+        scaling_md(stem, ref_key, sycl_supported),
+        scaling_cell_feature(stem, ref_key, scaling_build, L, d, tunables,
+                            sycl_supported),
     ]
     write(stem, cells)
 
@@ -334,6 +358,7 @@ build_kernel_nb(
     f"static_kernel={RBF})",
     n=32, d=3,
     tunables=["DIFFERENCE = True                 # increments of the lifted path"],
+    sycl_supported=True,
 )
 
 build_kernel_nb(
@@ -351,6 +376,7 @@ build_kernel_nb(
     "static_kernel=ksig.static.kernels.RBFKernel(bandwidth=BANDWIDTH))",
     n=32, d=3,
     tunables=["BANDWIDTH = 5.0                   # RBF bandwidth of the static kernel"],
+    sycl_supported=True,
 )
 
 build_feature_nb(
@@ -414,6 +440,7 @@ build_feature_nb(
     L=50, d=5,
     tunables=["N_COMPONENTS = 100                # number of random warping series"],
     kind="rws",
+    sycl_supported=True,
 )
 
 print("done.")

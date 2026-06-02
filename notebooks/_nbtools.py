@@ -94,33 +94,31 @@ def sycl_available() -> bool:
     by construction.
     """
     try:
-        import ksig._sycl as s  # type: ignore  # noqa: F401
-        return bool(s.loader.available())
+        # Import the submodule explicitly: ``ksig._sycl/__init__.py`` does not
+        # bind ``loader``, so ``import ksig._sycl; ksig._sycl.loader`` would
+        # raise ``AttributeError`` in a fresh process and wrongly report False.
+        from ksig._sycl import loader  # type: ignore
+        return bool(loader.available())
     except Exception:
         return False
 
 
 def enable_sycl(flag: bool = True) -> bool:
-    """Best-effort toggle of the SYCL fast-path for a scaling sweep.
+    """Toggle the SYCL fast-path for a scaling sweep.
 
     Returns whether SYCL is active afterwards (``False`` if unavailable), so a
     caller can gate the orange curve on the return value.
 
-    NOTE for the port author: wire ONE real switch here — the same one the
-    ``--sycl`` CLI flag flips.  The fallbacks below (a ``ksig.set_backend`` hook
-    or a ``KSIG_SYCL`` env var) are placeholders so the notebooks already have
-    the plumbing.
+    The real switch is the ``KSIG_USE_SYCL`` env var: ``ksig.algorithms``
+    reads it **per kernel call** (``_sycl_enabled()``), so flipping it here
+    changes dispatch for the *next* evaluation in this same process — exactly
+    what the blue (off) vs orange (on) sweeps need.  ``KSIG_USE_SYCL=0`` (also
+    ``false``/``no``/``off``) forces the torch wavefront; default/``1`` lets
+    SYCL auto-engage on XPU.
     """
     if not sycl_available():
         return False
-    try:
-        import ksig
-        if hasattr(ksig, "set_backend"):
-            ksig.set_backend("sycl" if flag else "torch")
-            return flag
-    except Exception:
-        pass
-    os.environ["KSIG_SYCL"] = "1" if flag else "0"
+    os.environ["KSIG_USE_SYCL"] = "1" if flag else "0"
     return flag
 
 
