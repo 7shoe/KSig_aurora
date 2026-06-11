@@ -64,8 +64,17 @@ def supports_float64(device=None) -> bool:
 
 
 def default_float_dtype(device=None) -> torch.dtype:
-  """The default floating dtype for `device` (float64 except on MPS)."""
+  """The default floating dtype for `device` (float64 except on MPS).
+
+  Honors the ``KSIG_DTYPE`` env override (e.g. ``float32`` on Aurora XPU: halves
+  memory and is much faster on PVC; loosens deterministic-equivalence tightness)."""
+  import os
   device = device or current_device()
+  override = os.environ.get("KSIG_DTYPE", "").strip().lower()
+  if override in ("float32", "fp32", "32"):
+    return torch.float32
+  if override in ("float64", "fp64", "64"):
+    return torch.float64 if supports_float64(device) else torch.float32
   return torch.float64 if supports_float64(device) else torch.float32
 
 
