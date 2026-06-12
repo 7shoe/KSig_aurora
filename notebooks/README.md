@@ -22,6 +22,37 @@ One notebook per significant feature:
 | `04_rfsf_features.ipynb` | Random Fourier Signature Features (RFSF-TRP) | `SignatureFeatures` + `RandomFourierFeatures` |
 | `05_low_rank_signature.ipynb` | Low-rank signature features | `SignatureFeatures` (projection only) |
 | `06_random_warping_series.ipynb` | Random Warping Series (DTW features) | `RandomWarpingSeries` |
+| `07_general_signature_kernel.ipynb` | General Signature Kernel — the six-column family + "data each excels on" CKA matrix | `GeneralSignatureKernel` |
+| `X_learned_kernel.ipynb` | **Learnable** General Signature Kernel — order recovery & free-weights-vs-dilation-cone | `GeneralSignatureKernel` (`sig-Wphi`, `sig-PDEphi`) |
+
+## The two flavours of notebook
+
+`01`–`06` are **throughput / correctness** demos for the ported kernels: they
+compute a kernel on deterministic data, eyeball it against the frozen CUDA
+reference, and sweep wall time (the green/blue/orange contract below).
+
+`07` and `X_learned_kernel` are **inductive-bias** demos for the
+`GeneralSignatureKernel` family (`ksig/generalized.py`, `docs/SIGNATURE_KERNELS.md`).
+They answer a *statistical* question rather than a timing one — **which kernel
+reads which structural locus of a path** — so they have **no green curve** (there
+is nothing to time against) and run on CPU (≤120 short paths). They share
+`_gsk_demo.py` (the level-localized data-generating processes, the CKA confusion
+matrix, and the φ/heatmap plots), the way `01`–`06` share `_nbtools.py`.
+
+* **`07`** maps the family: the six columns
+  (`sig-L1`, `sig-TRUNC`, `sig-PDE`, `sig-Wphi`, `sig-PDEphi`, `sig-EXACT`) as
+  configurations of one object, and the **DGP × kernel CKA heatmap** showing each
+  kernel winning on the data its order-weighting φ is built for (e.g. order-blind
+  references at chance on the signed-area `D_area`; only free weights peaking on
+  `D_peak`; the `Wphi > PDE > PDEphi` clamp chain on the tail signal `D_scale`).
+* **`X_learned_kernel`** is the flagship for the **learnable** kernel: it plants a
+  class signal at a known signature order $k^\star\in\{1,2,3\}$ and shows the
+  learned φ(k) **peaks at $k^\star$** (order recovery), then contrasts what each
+  learner can represent — `sig-Wphi`'s free, possibly non-monotone weights vs
+  `sig-PDEphi`'s completely-monotone dilation cone — on the level-2 peak `D_peak`.
+
+The CKA matrix these reproduce is pinned by
+`tests/test_signature_kernel_inductive_bias.py`.
 
 ## The colour contract
 
@@ -50,8 +81,11 @@ torch-native `ksig`, plus `matplotlib` and a Jupyter kernel.
 jupyter lab          # then open 01_signature_kernel.ipynb and Run All
 
 # or headless, execute every notebook in place:
-jupyter nbconvert --to notebook --execute --inplace notebooks/0*_*.ipynb
+jupyter nbconvert --to notebook --execute --inplace notebooks/*.ipynb
 ```
+
+The General-Signature-Kernel notebooks (`07`, `X_learned_kernel`) need only
+`ksig` + `matplotlib` — no CUDA reference — and run on CPU in ~1 min each.
 
 Each notebook is self-pathing: it adds the repo root to `sys.path`, so the
 in-repo `ksig` imports without a `pip install` (the same reason the tests use
@@ -76,11 +110,15 @@ The notebooks are built from one place so they stay consistent:
 
 ```bash
 python notebooks/_gen_reference.py      # re-measure the CUDA reference  -> cuda_reference.json
-python notebooks/_build_notebooks.py    # rebuild 0X_*.ipynb from the reference + templates
+python notebooks/_build_notebooks.py    # rebuild 01-07 + X_learned_kernel from templates
 ```
 
-`_nbtools.py` holds the shared helpers (env/SYCL detection, deterministic data,
-timing, the green/blue/orange plot). `_gen_reference.py` must run where CuPy +
+`_build_notebooks.py` writes **un-executed** notebooks; execute them with the
+`nbconvert` line above to embed outputs (the shipped notebooks are executed).
+`_nbtools.py` holds the shared helpers for `01`–`06` (env/SYCL detection,
+deterministic data, timing, the green/blue/orange plot); `_gsk_demo.py` holds the
+shared helpers for `07`/`X_learned_kernel` (the level-localized DGPs, the CKA
+confusion matrix, the φ/heatmap plots). `_gen_reference.py` must run where CuPy +
 CUDA work; `_build_notebooks.py` runs anywhere.
 
 > **One thing for the port author:** wire the real SYCL switch into

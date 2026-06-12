@@ -1,0 +1,86 @@
+[2026-06-12 00:09:22,154] [INFO] [real_accelerator.py:260:get_accelerator] Setting ds_accelerator to xpu (auto detect)
+[2026-06-12 00:09:31,818] [INFO] [logging.py:107:log_dist] [Rank -1] [TorchCheckpointEngine] Initialized with serialization = False
+========================================================================
+KSig kernel profile  |  device=xpu  |  dtypes=['float32', 'float64']
+torch device count: 12  |  quick=False
+========================================================================
+  12 XPU devices visible -- per-device matmul smoke:
+    xpu:0:  OK   ( 258.4 ms, 1024x1024 matmul)
+    xpu:1:  OK   ( 111.6 ms, 1024x1024 matmul)
+    xpu:2:  OK   ( 111.1 ms, 1024x1024 matmul)
+    xpu:3:  OK   ( 110.4 ms, 1024x1024 matmul)
+    xpu:4:  OK   ( 110.3 ms, 1024x1024 matmul)
+    xpu:5:  OK   ( 111.3 ms, 1024x1024 matmul)
+    xpu:6:  OK   ( 112.0 ms, 1024x1024 matmul)
+    xpu:7:  OK   ( 110.0 ms, 1024x1024 matmul)
+    xpu:8:  OK   ( 111.1 ms, 1024x1024 matmul)
+    xpu:9:  OK   ( 108.9 ms, 1024x1024 matmul)
+    xpu:10:  OK   ( 110.2 ms, 1024x1024 matmul)
+    xpu:11:  OK   ( 110.7 ms, 1024x1024 matmul)
+
+kernels under test (12): SignatureKernel, SignaturePDEKernel, GlobalAlignmentKernel, RFSF-TRP, LowRankSig, RandomWarpingSeries, GSK:sig-L1, GSK:sig-TRUNC, GSK:sig-PDE, GSK:sig-EXACT, GSK:sig-Wphi, GSK:sig-PDEphi
+
+=== CAPABILITY  (dtype=float32, tiny n=8 L=12 d=3) ===
+  kernel                 status finite  max|K-Kt|    diag  relerr/CPU  note
+  SignatureKernel        PASS   True     5.96e-08  1.0000    1.22e-07  
+  SignaturePDEKernel     PASS   True     2.09e-07  1.0000    1.19e-06  
+  GlobalAlignmentKernel  PASS   True     0.00e+00  1.0000    1.30e-06  
+  RFSF-TRP               PASS   True     0.00e+00  1.0000           -  
+  LowRankSig             PASS   True     0.00e+00  1.0000           -  
+  RandomWarpingSeries    PASS   True     0.00e+00  1.0000           -  
+  GSK:sig-L1             PASS   True     8.94e-08  1.0000    2.20e-07  
+  GSK:sig-TRUNC          PASS   True     5.96e-08  1.0000    2.06e-07  
+  GSK:sig-PDE            PASS   True     2.09e-07  1.0000    1.19e-06  
+  GSK:sig-EXACT          PASS   True     2.98e-08  1.0000    9.19e-08  
+  GSK:sig-Wphi           PASS   True     5.96e-08  1.0000           -  
+  GSK:sig-PDEphi         PASS   True     2.98e-07  1.0000           -  
+
+=== CAPABILITY  (dtype=float64, tiny n=8 L=12 d=3) ===
+  kernel                 status finite  max|K-Kt|    diag  relerr/CPU  note
+  SignatureKernel        PASS   True     1.11e-16  1.0000    1.62e-16  
+  SignaturePDEKernel     PASS   True     1.33e-15  1.0000    2.00e-15  
+  GlobalAlignmentKernel  PASS   True     0.00e+00  1.0000    1.10e-15  
+  RFSF-TRP               PASS   True     0.00e+00  1.0000           -  
+  LowRankSig             PASS   True     0.00e+00  1.0000           -  
+  RandomWarpingSeries    PASS   True     0.00e+00  1.0000           -  
+  GSK:sig-L1             PASS   True     2.22e-16  1.0000    3.49e-16  
+  GSK:sig-TRUNC          PASS   True     1.11e-16  1.0000    2.05e-16  
+  GSK:sig-PDE            PASS   True     1.33e-15  1.0000    2.00e-15  
+  GSK:sig-EXACT          PASS   True     5.55e-17  1.0000    1.56e-16  
+  GSK:sig-Wphi           PASS   True     1.67e-16  1.0000           -  
+  GSK:sig-PDEphi         PASS   True     5.55e-16  1.0000           -  
+
+=== PERFORMANCE  (median wall time, s; device=xpu) ===
+  kernel                 dtype    (n: seconds)                            
+  SignatureKernel        float32  L=32   16:0.0023  32:0.0025  64:0.0050
+  SignatureKernel        float64  L=32   16:0.0023  32:0.0025  64:0.0067
+  SignaturePDEKernel     float32  L=32   16:0.0006  32:0.0007  64:0.0008
+  SignaturePDEKernel     float64  L=32   16:0.0007  32:0.0007  64:0.0008
+  GlobalAlignmentKernel  float32  L=32   16:0.0006  32:0.0007  64:0.0009
+  GlobalAlignmentKernel  float64  L=32   16:0.0007  32:0.0008  64:0.0012
+  RFSF-TRP               float32  L=50   64:0.0041  128:0.0041  256:0.0043
+  RFSF-TRP               float64  L=50   64:0.0098  128:0.0043  256:0.0044
+  LowRankSig             float32  L=50   64:0.0027  128:0.0028  256:0.0029
+  LowRankSig             float64  L=50   64:0.0082  128:0.0029  256:0.0029
+  RandomWarpingSeries    float32  L=50   64:0.0014  128:0.0015  256:0.0021
+  RandomWarpingSeries    float64  L=50   64:0.0014  128:0.0018  256:0.0035
+  GSK:sig-L1             float32  L=32   16:0.0020  32:0.0020  64:0.0033
+  GSK:sig-L1             float64  L=32   16:0.0020  32:0.0020  64:0.0036
+  GSK:sig-TRUNC          float32  L=32   16:0.0019  32:0.0020  64:0.0033
+  GSK:sig-TRUNC          float64  L=32   16:0.0020  32:0.0020  64:0.0036
+  GSK:sig-PDE            float32  L=32   16:0.0006  32:0.0007  64:0.0008
+  GSK:sig-PDE            float64  L=32   16:0.0007  32:0.0007  64:0.0009
+  GSK:sig-EXACT          float32  L=32   16:0.0013  32:0.0014  64:0.0023
+  GSK:sig-EXACT          float64  L=32   16:0.0014  32:0.0014  64:0.0025
+  GSK:sig-Wphi           float32  L=32   16:0.0562  32:0.0562  64:0.0584
+  GSK:sig-Wphi           float64  L=32   16:0.0569  32:0.0570  64:0.0604
+  GSK:sig-PDEphi         float32  L=32   16:0.4070  32:0.4059  64:0.4087
+  GSK:sig-PDEphi         float64  L=32   16:0.4081  32:0.4077  64:0.4109
+
+=== LEARNED-phi FIT  (fit_phi, n=120, steps=50, device=xpu) ===
+  GSK:sig-Wphi           float32   0.091 s
+  GSK:sig-PDEphi         float32   0.206 s
+  GSK:sig-Wphi           float64   0.191 s
+  GSK:sig-PDEphi         float64   0.307 s
+
+done.

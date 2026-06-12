@@ -79,6 +79,34 @@ nb.print_env_banner(ENV)
 """
 
 
+# Setup for the General-Signature-Kernel notebooks (07 / X): same self-pathing as
+# SETUP, but also imports the `_gsk_demo` helper (DGPs, CKA matrix, plots) and
+# pins the device to CPU -- these are small *inductive-bias* demos (≤120 paths,
+# L=22), not the throughput sweeps of 01–06, so CPU is fast and deterministic.
+SETUP_GSK = """
+import sys, pathlib
+_nbdir = pathlib.Path.cwd()
+_root = _nbdir.parent if (_nbdir / "_nbtools.py").exists() else _nbdir
+_nbdir = _root / "notebooks"
+for _p in (str(_nbdir), str(_root)):
+    if _p not in sys.path:
+        sys.path.insert(0, _p)
+
+import numpy as np
+import matplotlib.pyplot as plt
+import ksig
+ksig.set_default_device("cpu")          # statistical demos run on CPU (small, reproducible)
+import _nbtools as nb
+import _gsk_demo as g
+%matplotlib inline
+
+ENV = nb.detect_env()
+nb.print_env_banner(ENV)
+print("GSK demo  | paths/DGP:", g.N_TRAIN, "| length:", g.L, "| channels:", g.D,
+      "| truncation N:", g.N_LEVELS, "| fit steps:", g.FIT_STEPS)
+"""
+
+
 def ref_block_text(shape, block, diag_mean):
     return ("gram shape : " + str(tuple(shape)) + "\n"
             "K[:3,:3]   :\n " + str(np.round(np.array(block), 4)) + "\n"
@@ -321,6 +349,319 @@ print("min eig    :", round(float(np.linalg.eigvalsh((K + K.T) / 2).min()), 6))
     write(stem, cells)
 
 
+# ---------------------------------------------------------------------------
+# 07 / X: the General Signature Kernel family (inductive-bias demos).
+# These are NOT throughput sweeps — they are statistical demos showing which
+# kernel reads which structural locus, and whether the learned phi recovers the
+# planted order. They share `_gsk_demo` (DGPs, CKA matrix, plots) and have no
+# CUDA-reference / green curve (there is nothing to time against).
+# ---------------------------------------------------------------------------
+def build_gsk_overview_nb():
+    """07_general_signature_kernel.ipynb — the six-column GSK family and the
+    'data each kernel excels on' CKA confusion matrix."""
+    stem = "07_general_signature_kernel"
+    cells = [
+        md(stem, 0, r"""
+# The General Signature Kernel — one object, six kernels
+
+`ksig.generalized.GeneralSignatureKernel` (GSK) is a **single configurable
+object** that reproduces six signature-based kernels. Five are the *same*
+normalize-once kernel
+$$K_\varphi=\sum_{k\ge0}\varphi(k)\,K_k$$
+under a choice of **order-weighting** $\varphi(k)$, **truncation depth**, and
+**normalization**; the sixth (`sig-EXACT`) is a legacy per-level-normalized
+average kept for its inductive bias. $K_k$ is the level-$k$ signature kernel
+$\langle S^k(x),S^k(y)\rangle$ — homogeneous of degree $k$ — so *choosing a
+kernel is choosing $\varphi$*.
+
+This notebook is the **map of the family**: what each column is, and — the
+centerpiece — **which kernel reads which structural locus of a path**, measured
+as out-of-sample kernel–target alignment (CKA) on six level-localized
+data-generating processes. The companion **`X_learned_kernel.ipynb`** zooms into
+the two *learnable* columns (`sig-Wphi`, `sig-PDEphi`) and the order-recovery
+question.
+
+Reference: `docs/SIGNATURE_KERNELS.md` (derives all six as specializations of one
+skeleton); the matrix below is pinned by
+`tests/test_signature_kernel_inductive_bias.py`.
+"""),
+        md(stem, 1, "## Environment\nDetect the live backend/device. The GSK demos "
+                    "run on CPU (small, reproducible); the throughput story for the "
+                    "ported kernels is in notebooks `01`–`06`."),
+        code(stem, 1, SETUP_GSK),
+        md(stem, 2, r"""
+## The six columns
+
+| column | `phi` | `truncation` | `normalize` | $\varphi(k)$ | learns? |
+|---|---|---|---|---|---|
+| `sig-L1` | `level_one` | $N$ | `once` | $e_1$ (level-1 only) | no |
+| `sig-TRUNC` | `const` | $N$ | `once` | $1$ (truncated) | no |
+| `sig-PDE` | `const` | `None` | `once` | $1$ (Goursat, untruncated) | no |
+| `sig-Wphi` | `free` | $N$ | `once` | $\mathrm{softplus}(\theta)\ge0$ | **yes** |
+| `sig-PDEphi` | `dilation` | `None` | `once` | $\sum_i w_i\lambda_i^{k}$ | **yes** |
+| `sig-EXACT` | `const` | $N$ | `per_level` | $1$, per-level whitened | no |
+
+$\varphi(0)\equiv1$ on every arm (the rank-1 level $K_0=\mathbf{1}\mathbf{1}^\top$
+is weighted identically), so cross-column deltas carry no level-0 mismatch. The
+cell below builds each fixed-$\varphi$ column and prints its $\varphi$ profile.
+"""),
+        code(stem, 2, r"""
+for name, (phi, trunc, norm) in {
+        "sig-L1":    ("level_one", g.N_LEVELS, "once"),
+        "sig-TRUNC": ("const",     g.N_LEVELS, "once"),
+        "sig-PDE":   ("const",     None,       "once"),
+        "sig-EXACT": ("const",     g.N_LEVELS, "per_level"),
+}.items():
+    k = g.gsk(phi, trunc, normalize=norm, bw=1.0)
+    print(f"{name:10s}  phi(0:N) = {np.round(k.phi_profile(g.N_LEVELS), 3)}")
+print("\n(sig-Wphi / sig-PDEphi learn phi from data -> see X_learned_kernel.ipynb)")
+"""),
+        md(stem, 3, r"""
+## The data each kernel excels on
+
+Six **level-localized** DGPs, each planting a binary-class signal at one
+structural locus of the path (so the *matched* kernel should win):
+
+| DGP | what is planted | who should read it |
+|---|---|---|
+| `D_disp` | level-1 net displacement | order-blind suffices (no order gain) |
+| `D_area` | level-2 signed area (**order**) | every order-aware kernel; blind reps at chance |
+| `D_peak` | level-2 peak, levels 1 & 3 noise | only free weights (`sig-Wphi`) can peak |
+| `D_scale` | level $\ge$ 3 tail amplitude | clamp chain `Wphi > PDE > PDEphi` |
+| `D_lowsig` | level-2 signal + tail noise | soft-decay `PDEphi > PDE` |
+| `D_perlevel` | level-2 under wide per-path scale | only per-level whitening (`sig-EXACT`) |
+
+First, a look at the cleanest one — `D_area`: a closed loop whose **time
+direction** (CW vs CCW) is the class. The endpoint and the set of points are
+identical across classes; only the **signed area** (a level-2, order-only
+statistic) differs.
+"""),
+        code(stem, 3, r"""
+Xtr, ytr, _, _ = g.split(g.make_area, seed=list(g.DATASETS).index("D_area"))
+fig, ax = plt.subplots(1, 2, figsize=(8, 4), sharex=True, sharey=True)
+for cls, a in zip((0, 1), ax):
+    for i in np.where(ytr == cls)[0][:6]:
+        a.plot(Xtr[i, :, 0], Xtr[i, :, 1], alpha=0.7)
+        a.plot(*Xtr[i, 0], "ko", ms=3)
+    a.set_title(f"class {cls}  ({'CCW' if cls == 0 else 'CW'} loop)"); a.set_aspect("equal")
+fig.suptitle("D_area — class = loop orientation (a level-2 / order-only signal)")
+plt.tight_layout(); plt.show()
+"""),
+        md(stem, 4, r"""
+## The confusion matrix — who reads what
+
+For each DGP we fit the two learnable kernels on the **train** split, then score
+**every** kernel out-of-sample by CKA on the **test** split (centered alignment
+of the Gram with $yy^\top$ — the same objective `fit_phi` maximizes). The
+per-row winner is boxed.
+
+**Reference (CPU, `GeneralSignatureKernel`, 2026-06-11) — the predicted diagonal:**
+
+```text
+dataset      sig-L1  sig-TRUNC  sig-PDE  sig-Wphi  sig-PDEphi  sig-EXACT  pooled  kme
+D_disp       +0.224  +0.240     +0.241   +0.248    +0.249      +0.229     +0.295  +0.278
+D_area       +0.004  +0.875     +0.836   +0.915    +0.823      -0.008     +0.010  +0.009
+D_peak       +0.015  +0.088     +0.085   +0.182    +0.047      +0.134     +0.008  +0.013
+D_scale      +0.031  +0.255     +0.198   +0.800    +0.082      +0.079     +0.011  +0.125
+D_lowsig     -0.005  +0.202     +0.379   +0.219    +0.433      -0.012     +0.013  +0.019
+D_perlevel   +0.015  +0.052     +0.043   +0.098    +0.044      +0.171     +0.013  +0.009
+```
+
+The next cell recomputes this live (~30 s on CPU). Values move by a few points
+with the backend RNG, but the **winner of each row is stable**.
+"""),
+        code(stem, 4, r"""
+M = g.confusion_matrix()                 # {DGP: {kernel: out-of-sample CKA}}, ~30 s
+g.plot_cka_heatmap(M); plt.show()
+"""),
+        md(stem, 5, r"""
+## Reading the matrix
+
+* **`D_disp` (level 1).** Everything ties, and the order-blind `pooled-RBF` is
+  *best* — a straight displacement needs no order, and the signature family
+  manufactures no spurious order gain.
+* **`D_area` (order).** The order-aware kernels jump to $0.82$–$0.92$ while every
+  order-**blind** representation (`sig-L1`, `pooled-RBF`, `kme-RBF`) sits at
+  chance. This is the signature kernel's reason to exist.
+* **`D_peak`.** Signal at level 2 with noise at levels 1 **and** 3: the optimal
+  $\varphi$ is a **non-monotone peak**. Only `sig-Wphi`'s free weights can
+  represent it — the dilation cone and the uniform/per-level kernels cannot.
+* **`D_scale` (tail).** The class lives in the level-$\ge$3 tail; free weights
+  reach it, uniform `sig-PDE` partly, and the $\lambda_{\max}=0.5$ dilation cone
+  (`sig-PDEphi`, forced *decaying*) cannot — the clamp chain `Wphi > PDE > PDEphi`.
+* **`D_lowsig`.** Signal at level 2, noise in the tail: `sig-PDEphi`'s soft-decay
+  $\varphi$ down-weights the tail and **beats uniform `sig-PDE`**.
+* **`D_perlevel`.** A class-independent level-1 drift dominates the global norm;
+  only `sig-EXACT`'s per-path, **per-level** whitening recovers the level-2 sign.
+
+Two of these winners — `sig-Wphi` on `D_peak`/`D_scale` and `sig-PDEphi` on
+`D_lowsig` — are kernels that **learned** their $\varphi$ from the data. That is
+the subject of **`X_learned_kernel.ipynb`**: can the kernel *recover the order* a
+process plants?
+"""),
+    ]
+    write(stem, cells)
+
+
+def build_learned_kernel_nb():
+    """X_learned_kernel.ipynb — the flagship: the learnable GSK, order recovery,
+    and the free-weights-vs-dilation-cone structural contrast."""
+    stem = "X_learned_kernel"
+    cells = [
+        md(stem, 0, r"""
+# The learnable General Signature Kernel — recovering the order
+
+Two of the six GSK columns **learn** their order-weighting $\varphi(k)$ from
+labelled data instead of fixing it:
+
+* **`sig-Wphi`** (truncated, *free weights*): $\varphi(0)=1$ pinned,
+  $\varphi(1{:}N)=\mathrm{softplus}(\theta)\ge0$ — an **arbitrary** nonnegative,
+  possibly **non-monotone** level profile.
+* **`sig-PDEphi`** (untruncated, *dilation mixture*):
+  $\varphi(k)=\sum_{i=1}^m w_i\lambda_i^{k}$ with $w=\mathrm{softmax}(\cdot)\ge0$,
+  $\lambda_i\in(0,\lambda_{\max})$. By the **dilation identity** (Cass–Lyons–Xu),
+  a geometric mixture of dilated signature kernels *is* an order-weighting — but
+  a **completely monotone** (decaying) one.
+
+Both are **two-phase**: `fit_phi(Xtr, ytr)` learns $\varphi$ by maximizing
+centered kernel–target alignment (CKA) on the **training** set; the object is
+then frozen and behaves as an ordinary precomputed PSD kernel ($\varphi\ge0\Rightarrow$
+conic sum of PSD level kernels). Design: `docs/SIGNATURE_KERNELS.md` §0.3–0.7.
+
+**The question this notebook answers:** if a data-generating process plants its
+class signal at a *known* signature order $k^\star$, does the learned
+$\varphi(k)$ **peak at $k^\star$**? And what can each of the two learners
+represent?
+"""),
+        md(stem, 1, "## Environment"),
+        code(stem, 1, SETUP_GSK),
+        md(stem, 2, r"""
+## Planted-order data
+
+`g.make_planted(level, n, seed)` confines the class signal to one signature
+**level** and makes everything else class-independent:
+
+* **level 1** — a class-dependent straight **drift** (net displacement, zero area);
+* **level 2** — a class-**oriented** closed loop (signed area, zero displacement);
+* **level 3** — a class-**time-reversed** figure-eight (zero area; energy in the
+  odd $\ge$3 tail) over a class-independent micro-loop.
+
+These are the level-localized primitives of the inductive-bias suite, retuned so
+the matched order is unambiguous at truncation $N=3$.
+"""),
+        code(stem, 2, r"""
+fig, ax = plt.subplots(1, 3, figsize=(11, 3.6))
+for lvl, a in zip((1, 2, 3), ax):
+    X, y = g.make_planted(lvl, 60, seed=lvl)
+    for cls, c in zip((0, 1), ("tab:blue", "tab:red")):
+        for i in np.where(y == cls)[0][:4]:
+            a.plot(X[i, :, 0], X[i, :, 1], c=c, alpha=0.6)
+    a.set_title(f"planted level {lvl}"); a.set_aspect("equal")
+fig.suptitle("Planted-order DGPs  (blue = class 0, red = class 1)")
+plt.tight_layout(); plt.show()
+"""),
+        md(stem, 3, r"""
+## Order recovery — does $\varphi$ peak at the planted level?
+
+For each planted level $k^\star\in\{1,2,3\}$ we fit **`sig-Wphi`** (free weights,
+$N=3$) on the train split and read off the learned $\varphi(1{:}N)$. The dashed
+line marks $k^\star$; recovery means the **argmax lands on it**.
+"""),
+        code(stem, 3, r"""
+import torch
+profiles, recovered = {}, {}
+for lvl in (1, 2, 3):
+    Xtr, ytr, _, _ = g.split(lambda n, s: g.make_planted(lvl, n, s), seed=lvl)
+    bw = g.median_bw(Xtr)
+    torch.manual_seed(0)
+    k = g.gsk("free", g.N_LEVELS, bw=bw).fit_phi(Xtr, ytr, steps=g.FIT_STEPS)
+    phi = np.asarray(k.phi_profile())
+    profiles[f"planted $k^\\star$={lvl}"] = phi
+    recovered[lvl] = 1 + int(np.argmax(phi[1:]))          # argmax over levels 1..N
+    print(f"planted level {lvl}:  phi = {np.round(phi, 3)}   ->  peak at level {recovered[lvl]}"
+          f"   {'(recovered)' if recovered[lvl] == lvl else '(MISS)'}")
+
+g.plot_phi(profiles, planted={f"k{l}": l for l in (1, 2, 3)},
+           title="sig-Wphi learns phi peaked at the planted order")
+plt.show()
+"""),
+        md(stem, 4, r"""
+## What each learner can represent — free weights vs the dilation cone
+
+`D_peak` plants the signal at **level 2** with **noise at levels 1 and 3**, so
+the ideal $\varphi$ is a **non-monotone peak** (suppress 1 and 3, keep 2). We fit
+both learnable kernels and compare their learned $\varphi$:
+
+* **`sig-Wphi`** (free weights) *can* peak — $\varphi(2)>\varphi(1)$.
+* **`sig-PDEphi`** is a sum of $\lambda_i^k$ with $\lambda_i,w_i\ge0$, i.e. a
+  **completely monotone** (Stieltjes) sequence — it is **structurally forbidden**
+  from peaking and must be non-increasing.
+
+This is the theory linchpin behind `D_peak`'s CKA gap, checked here directly on
+the **coefficients** (no data-calibration dependence).
+"""),
+        code(stem, 4, r"""
+import torch
+Xtr, ytr, _, _ = g.split(g.make_peak, seed=list(g.DATASETS).index("D_peak"))
+bw = g.median_bw(Xtr)
+torch.manual_seed(0)
+wphi = g.gsk("free", g.N_LEVELS, bw=bw).fit_phi(Xtr, ytr, steps=g.FIT_STEPS)
+torch.manual_seed(0)
+pdephi = g.gsk("dilation", None, bw=bw).fit_phi(Xtr, ytr, steps=g.FIT_STEPS)
+
+w = np.asarray(wphi.phi_profile(g.N_LEVELS))
+p = np.asarray(pdephi.phi_profile(g.N_LEVELS))
+print(f"sig-Wphi    phi = {np.round(w, 3)}   peak above level 1? {bool(w[2] > w[1])}")
+print(f"sig-PDEphi  phi = {np.round(p, 3)}   monotone non-increasing? {bool(np.all(np.diff(p) <= 1e-6))}")
+
+g.plot_phi({"sig-Wphi (free, can peak)": w, "sig-PDEphi (dilation cone, monotone)": p},
+           planted=2, title="D_peak — free weights peak at level 2; the dilation cone cannot")
+plt.show()
+"""),
+        md(stem, 5, r"""
+## The payoff — learning $\varphi$ buys alignment on the matched data
+
+Finally, the out-of-sample CKA of the two learners against the fixed-$\varphi$
+baselines and an order-blind reference, on the DGPs each learner is built for:
+
+* **`D_peak`** (non-monotone) — `sig-Wphi` should win outright.
+* **`D_lowsig`** (tail noise) — `sig-PDEphi`'s soft-decay should beat uniform `sig-PDE`.
+* **`D_scale`** (tail signal) — the clamp chain `sig-Wphi > sig-PDE > sig-PDEphi`.
+"""),
+        code(stem, 5, r"""
+cols = ["sig-L1", "sig-TRUNC", "sig-PDE", "sig-Wphi", "sig-PDEphi"]
+reg = {k: v for k, v in g.kernel_registry().items() if k in cols}
+M = g.confusion_matrix(datasets=["D_peak", "D_lowsig", "D_scale"], kernels=reg)
+
+fig, ax = plt.subplots(figsize=(7.2, 4.0))
+xpos = np.arange(len(M)); w = 0.16
+for j, name in enumerate(cols):
+    ax.bar(xpos + (j - 2) * w, [M[d][name] for d in M], w, label=name)
+ax.axhline(g.CHANCE, ls="--", color="grey", alpha=0.6, label=f"chance ({g.CHANCE})")
+ax.set_xticks(xpos); ax.set_xticklabels(list(M)); ax.set_ylabel("out-of-sample CKA")
+ax.set_title("Learned phi (sig-Wphi / sig-PDEphi) vs fixed baselines")
+ax.legend(fontsize=8, ncol=2); plt.tight_layout(); plt.show()
+"""),
+        md(stem, 6, r"""
+## Takeaways
+
+* **The learned $\varphi$ recovers the planted order.** On a signal confined to
+  level $k^\star$, `sig-Wphi`'s free weights peak at $k^\star$ for $k^\star=1,2,3$.
+* **Representation is a design choice.** Free weights (`sig-Wphi`) span arbitrary
+  nonnegative — including non-monotone — profiles; the dilation mixture
+  (`sig-PDEphi`) is **completely monotone** by construction, trading expressivity
+  for an *untruncated* kernel and a soft, decaying tail.
+* **Each wins where its bias matches the data** (`D_peak` → `sig-Wphi`,
+  `D_lowsig` → `sig-PDEphi`), and the $\lambda_{\max}$ clamp caps the dilation
+  cone away from tail-*amplifying* signals (`D_scale`).
+* **PSD throughout** ($\varphi\ge0$), so a fitted kernel drops straight into any
+  precomputed-kernel SVM/GP. See `07_general_signature_kernel.ipynb` for the full
+  family map and `docs/SIGNATURE_KERNELS.md` for the derivations.
+"""),
+    ]
+    write(stem, cells)
+
+
 # ===========================================================================
 # The six notebooks.
 # ===========================================================================
@@ -442,5 +783,9 @@ build_feature_nb(
     kind="rws",
     sycl_supported=True,
 )
+
+# General Signature Kernel family (inductive-bias / learnable demos).
+build_gsk_overview_nb()
+build_learned_kernel_nb()
 
 print("done.")
