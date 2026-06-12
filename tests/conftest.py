@@ -25,6 +25,8 @@ def pytest_configure(config):
         ("slow", "large end of the dimension sweep"),
         ("stress", "extreme shapes / float16 / OOM-probing"),
         ("monitoring", "smoke-runs a monitoring probe (not a perf gate)"),
+        ("random_feature", "Monte-Carlo random-feature smoke (seeded, loose "
+                           "tolerance; separable so it can't flake core gates)"),
     ]:
         config.addinivalue_line("markers", f"{name}: {desc}")
 
@@ -63,10 +65,14 @@ def pytest_terminal_summary(terminalreporter, exitstatus, config):
     tr.section("suite notes", sep="-", blue=True)
     if xfailed:
         tr.write_line(
-            f"* {xfailed} xfailed = KNOWN legacy ksig bugs, pinned on purpose: "
-            "euclid_dist breaks Matern12/32, and SigPDE(difference=True) can't "
-            "launch on L=1. Expected red on the legacy backend; the torch port "
-            "must FIX them (they then flip to xpassed -> promote to required-pass)."
+            f"* {xfailed} xfailed = KNOWN gaps pinned on purpose, two kinds: "
+            "(a) legacy ksig bugs the torch port must FIX (euclid_dist breaks "
+            "Matern12/32; SigPDE(difference=True) can't launch on L=1); and "
+            "(b) paper-contract remediations not yet landed "
+            "(tests/paper_contracts: plain sig-PDE stability gate, auto_clamp phi "
+            "reporting, paper-4 Algorithm 6 / string kernels, docs link F9). "
+            "Each carries its reason; when the fix lands it flips to xpassed -> "
+            "promote to a required-pass assertion."
         )
     if xpassed:
         tr.write_line(
