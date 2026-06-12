@@ -130,3 +130,10 @@ dmypy.json
 
 # Monitoring benchmark artifacts (perf data, not committed)
 monitoring/results/
+
+# no superfluous documentation
+paper_specs/scripts/results/
+scripts/results/
+
+# no BioRep
+_fromBioRep
