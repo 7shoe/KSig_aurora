@@ -39,6 +39,7 @@ Both engines expose the KSig `__call__(X, Y=None, diag=False, return_on_gpu=Fals
 after a `fit_phi(Xtr, ytr)` phase they are ordinary precomputed kernels (drop into gak_gram + SVC).
 """
 from __future__ import annotations
+import os
 import warnings
 import numpy as np
 import torch
@@ -69,6 +70,39 @@ def _static_block(X, Y, bw, dev):
     Yt = _as_block_tensor(Y, dev)
     d2 = (Xt[:, None, :, None, :] - Yt[None, :, None, :, :]).pow(2).sum(-1)
     return torch.exp(-d2 / (2.0 * bw * bw))                      # [nX,nY,L,L]
+
+
+# Row-block sizing for the cross-Gram wrapper below. The un-blocked _static_block materializes a
+# transient [nX,nY,L,L,d] difference (~ nX*nY*L^2*d*4 bytes); at the fit cross-Gram (256x256x32x32x256
+# ~ 68 GB) or a long-sequence eval block (8x2048x65x65x256 ~ 71 GB) that fits host RAM but OOMs an
+# XPU/GPU tile. KSIG_STATIC_BLOCK: unset -> ADAPTIVE (largest nX-block whose [b,nY,L,L,d] transient
+# stays under KSIG_STATIC_TARGET_GB, default 6 GB; one config is then safe across n_train AND L_cap);
+# a positive int -> that fixed block; 0 -> disabled (verbatim single-shot _static_block).
+_STATIC_BLOCK_ENV = os.environ.get("KSIG_STATIC_BLOCK")          # None => adaptive
+_STATIC_TARGET_GB = float(os.environ.get("KSIG_STATIC_TARGET_GB", "6"))
+
+
+def _static_block_blocked(X, Y, bw, dev, block=None):
+    """Row-blocked wrapper over the FROZEN _static_block (additive; _static_block is unchanged).
+    Computes the same [nX,nY,L,L] Gram in row-chunks of X so the transient [b,nY,L,L,d] difference
+    never grows to the full [nX,nY,L,L,d] tensor that OOMs XPU/GPU memory. The block ADAPTS to
+    nY/L/d (cost ~ b*nY*L^2*d), so a single config is safe across n_train and L_cap. Bit-identical
+    to _static_block: per-pair RBF values are independent of row batching, and torch.cat over the
+    row axis only reassembles them."""
+    Xt = _as_block_tensor(X, dev)
+    Yt = _as_block_tensor(Y, dev)
+    nX, L, d = Xt.shape[0], Xt.shape[1], Xt.shape[2]
+    nY = Yt.shape[0]
+    if block is not None:
+        b = block
+    elif _STATIC_BLOCK_ENV is not None:
+        b = int(_STATIC_BLOCK_ENV)
+    else:                                                        # adaptive: bound the transient
+        per_row = max(1, nY * L * L * d * 4)                     # bytes for ONE X-row's difference
+        b = max(1, int(_STATIC_TARGET_GB * (1024 ** 3) // per_row))
+    if b <= 0 or b >= nX:
+        return _static_block(Xt, Yt, bw, dev)
+    return torch.cat([_static_block(Xt[i:i + b], Yt, bw, dev) for i in range(0, nX, b)], 0)
 
 
 def _second_diff(G):
@@ -176,7 +210,7 @@ class WeightedSignatureKernel:
     def _levels(self, X, Y=None):
         """Cross level Grams [N+1,nX,nY] and self-diagonals [N+1,nX],[N+1,nY]. The self-diagonals
         use signature_kern's native ndim==3 'diag' mode on the O(n L^2) self block (no [n,n,L,L])."""
-        M = _second_diff(_static_block(X, X if Y is None else Y, self.bw, self.dev))
+        M = _second_diff(_static_block_blocked(X, X if Y is None else Y, self.bw, self.dev))
         K = torch.stack(list(signature_kern(M, self.N, 1, False, True)), 0)            # [N+1,nX,nY]
         dX = torch.stack(list(signature_kern(_diag_block(X, self.bw, self.dev),
                                              self.N, 1, False, True)), 0)              # [N+1,nX]
@@ -284,7 +318,7 @@ class LearnedPhiSignaturePDEKernel:
         if inner_idx is not None:
             X, y = X[inner_idx], np.asarray(y)[inner_idx]
         yt = _target(y, task, self.dev)
-        M = _second_diff(_static_block(X, X, self.bw, self.dev))    # hoisted: built ONCE
+        M = _second_diff(_static_block_blocked(X, X, self.bw, self.dev))    # hoisted: built ONCE
         Mx = _diag_block(X, self.bw, self.dev)
         _stability_ok(M, self.lam_max, "fit_phi")                  # warn (eval will NaN if it diverges)
         if not learn_lam:                                          # ---- FAST convex weights-only ----
@@ -302,7 +336,11 @@ class LearnedPhiSignaturePDEKernel:
                     dd = (w[:, None] * di).sum(0)
                     K = _normalize(K, dd, dd)
                 _cka_loss(K, yt).backward(); opt.step()
-            self.raw_w = rw.detach()                              # lam (raw_l) unchanged
+            self.raw_w = rw.detach()                              # learned weights, on self.dev
+            # the fast path above only moved a LOCAL copy of raw_l to self.dev; reassign so BOTH raw
+            # params live on self.dev. Otherwise raw_l stays on host and phi()/_nodes mix host+device
+            # tensors on XPU/GPU -> "Expected all tensors to be on the same device" (CPU no-op).
+            self.raw_l = self.raw_l.to(self.dev)                  # lam grid frozen, now on self.dev
             return self
         rl = self.raw_l.clone().to(self.dev).requires_grad_(True)  # ---- faithful (w, lam) ----
         rw = self.raw_w.clone().to(self.dev).requires_grad_(True)
@@ -317,8 +355,8 @@ class LearnedPhiSignaturePDEKernel:
     def phi(self, kmax=12):
         with torch.no_grad():
             w, lam = self._nodes(self.raw_l, self.raw_w)
-            ks = torch.arange(kmax + 1, dtype=torch.float32, device=self.dev)[:, None]
-            return (w[None] * lam[None] ** ks).sum(-1).cpu().numpy()
+            ks = torch.arange(kmax + 1, dtype=torch.float32, device=lam.device)[:, None]
+            return (w.to(lam.device)[None] * lam[None] ** ks).sum(-1).cpu().numpy()
 
     def __call__(self, X, Y=None, diag=False, return_on_gpu=False):
         with torch.no_grad():
@@ -332,7 +370,7 @@ class LearnedPhiSignaturePDEKernel:
                         w, lam = self._nodes(self.raw_l, self.raw_w)
                         out = sum(wi * sigpde_wavefront(li * Mx) for wi, li in zip(w, lam))
             else:
-                M = _second_diff(_static_block(X, X if Y is None else Y, self.bw, self.dev))
+                M = _second_diff(_static_block_blocked(X, X if Y is None else Y, self.bw, self.dev))
                 lm = self._eff_lam_max(M)
                 if not self.auto_clamp and not _stability_ok(M, self.lam_max, "__call__"):
                     nY = len(X) if Y is None else len(Y)
