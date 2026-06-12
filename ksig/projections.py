@@ -333,12 +333,16 @@ class VerySparseRandomProjection(RandomProjection):
       prob_nonzero = np.log(self.n_features_) / self.n_features_
     elif self.sparsity == 'sqrt':  # Less sparse.
       prob_nonzero = 1. / np.sqrt(self.n_features_)
-    components_full = utils.draw_bernoulli_matrix(  # Draw sparse Bernoulli matrix.
+    support = utils.draw_bernoulli_matrix(  # Sparse 0/1 support mask.
         [self.n_components, self.n_features_], prob=prob_nonzero,
         random_state=self.random_state)
-    components_full[0, 0] = 1  # Force at least one nonzero component.
-    components_full = utils.draw_rademacher_matrix(  # Random flips.
+    support[0, 0] = 1  # Force at least one nonzero component.
+    signs = utils.draw_rademacher_matrix(  # Random +/-1 flips.
       [self.n_components, self.n_features_], random_state=self.random_state)
+    # Realized density ~= prob_nonzero; the sparse `scaling_` below is then
+    # correct. (Previously the dense Rademacher draw overwrote the support,
+    # yielding a dense signed matrix mis-scaled as if sparse -- see audit F7.)
+    components_full = support * signs
     self.sampled_idx_ = torch.nonzero(  # Subsample nonzero columns.
       torch.any(utils.robust_nonzero(components_full), dim=0),
       as_tuple=True)[0]

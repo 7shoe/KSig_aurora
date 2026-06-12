@@ -71,6 +71,9 @@ def signature_kern_first_order(M: ArrayOnGPU, n_levels: int,
       depending on `M` above, and `...` is `n_levels` when `return_levels`.
   """
 
+  if n_levels < 0:
+    raise ValueError(f'n_levels must be non-negative, got {n_levels}.')
+
   if difference:
     M = torch.diff(torch.diff(M, dim=-2), dim=-1)
   if M.ndim == 4:
@@ -79,6 +82,12 @@ def signature_kern_first_order(M: ArrayOnGPU, n_levels: int,
   else:
     n_X = M.shape[0]
     K = torch.ones((n_X,), dtype=M.dtype, device=M.device)
+
+  # Level-0 contract: `n_levels == 0` is the constant level only (Contract 1 /
+  # truncated-phi card). Returning here keeps the wrapper's phi vector (length 1)
+  # aligned with the level stack and avoids silently folding level 1 into it.
+  if n_levels == 0:
+    return torch.stack([K], dim=0) if return_levels else K
 
   if return_levels:
     K = [K, torch.sum(M, dim=(-2, -1))]
@@ -113,6 +122,9 @@ def signature_kern_higher_order(M: ArrayOnGPU, n_levels: int, order: int,
       depending on `M` above, and `...` is `n_levels` when `return_levels`.
   """
 
+  if n_levels < 0:
+    raise ValueError(f'n_levels must be non-negative, got {n_levels}.')
+
   if difference:
     M = torch.diff(torch.diff(M, dim=-2), dim=-1)
 
@@ -122,6 +134,11 @@ def signature_kern_higher_order(M: ArrayOnGPU, n_levels: int, order: int,
   else:
     n_X = M.shape[0]
     K = torch.ones((n_X,), dtype=M.dtype, device=M.device)
+
+  # Level-0 contract: `n_levels == 0` is the constant level only (see the
+  # first-order routine above for the rationale).
+  if n_levels == 0:
+    return torch.stack([K], dim=0) if return_levels else K
 
   if return_levels:
     K = [K, torch.sum(M, dim=(-2, -1))]

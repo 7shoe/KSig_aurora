@@ -19,6 +19,29 @@ from .utils import _EPS, ArrayOnGPU, ArrayOnCPUOrGPU, RandomStateOrSeed
 from .torch_backend import as_tensor, eps_for
 
 
+# Upper bound for spawned child seeds (signed 32-bit range, torch-safe).
+_CHILD_SEED_MAX = 2 ** 31 - 1
+
+
+def _spawn_child_seeds(parent_rng, n: int) -> list:
+  """Deterministically derive `n` independent integer seeds from `parent_rng`.
+
+  RFSF / RFSF-DP / RFSF-TRP require *independent* random weights per signature
+  level (paper-3 Contract 4: a shared `W` biases the estimator). Cloning the
+  feature/projection estimator via `get_params()` passes the live
+  `TorchRandomState` object to every copy, so independence currently holds only
+  as a side effect of those copies sharing one advancing generator -- a fragile
+  invariant that breaks the moment `get_params()` returns a raw seed or the
+  state is deep-copied. Spawning explicit child seeds here makes per-level
+  independence a guaranteed property of the design rather than an accident,
+  while staying reproducible: a seeded parent yields a fixed child sequence, an
+  unseeded parent yields independent (non-reproducible) children, matching
+  sklearn's `random_state=None` semantics.
+  """
+  return [int(parent_rng.randint(0, _CHILD_SEED_MAX, size=[1])[0])
+          for _ in range(n)]
+
+
 # ------------------------------------------------------------------------------
 # Signature kernel base class.
 # ------------------------------------------------------------------------------
@@ -304,11 +327,17 @@ class SignatureFeatures(SignatureBase, KernelFeatures):
       # Merge batch and sequence axes.
       X = X.reshape([-1, X.shape[-1]])
       if self.indep_feat:
-        # Create `n_levels` copies of `static_features`.`
+        # Create `n_levels` copies of `static_features` with INDEPENDENT RNG
+        # streams per level (paper-3 Contract 4). Each copy gets its own
+        # deterministically-spawned child seed instead of sharing the parent
+        # state object.
         static_feat_hps = self.static_features.get_params()
         static_feat_cls = self.static_features.__class__
+        child_seeds = _spawn_child_seeds(
+          self.static_features.random_state, self.n_levels)
         self.static_features_ = [
-          static_feat_cls(**static_feat_hps).fit(X)
+          static_feat_cls(**{**static_feat_hps, 'random_state': child_seeds[i]}
+                          ).fit(X)
           for i in range(self.n_levels)]
         U = self.static_features_[0].transform(X, return_on_gpu=True)
       else:
@@ -319,12 +348,18 @@ class SignatureFeatures(SignatureBase, KernelFeatures):
     else:
       U = X
     if self.projection is not None:
+      # Independent projection RNG per level, same rationale as the static
+      # feature copies above (paper-3 Contracts 4/8/9).
       proj_hps = self.projection.get_params()
       proj_cls = self.projection.__class__
-      self.projections_ = [proj_cls(**proj_hps).fit(U)]
+      proj_seeds = _spawn_child_seeds(
+        self.projection.random_state, self.n_levels)
+      self.projections_ = [
+        proj_cls(**{**proj_hps, 'random_state': proj_seeds[0]}).fit(U)]
       V = self.projections_[0](U)
       self.projections_ += [
-        proj_cls(**proj_hps).fit(V, Y=U) for i in range(1, self.n_levels)]
+        proj_cls(**{**proj_hps, 'random_state': proj_seeds[i]}).fit(V, Y=U)
+        for i in range(1, self.n_levels)]
     else:
       self.projections_ = None
 

@@ -48,10 +48,25 @@ from .algorithms import signature_kern
 
 
 # ---------------------------------------------------------------- shared pieces (FROZEN)
+def _as_block_tensor(X, dev):
+    """Convert an input path array to a torch tensor on `dev` WITHOUT a host hop
+    or a forced dtype. A torch input keeps its dtype, device, and autograd graph
+    (so float64 inputs stay float64 -- recommended for Goursat stability -- and
+    a requires_grad input remains differentiable); a numpy/list input is adopted
+    at its native float dtype. (Audit F3: the old `as_tensor(np.asarray(X),
+    dtype=float32)` severed the graph and silently downcast float64.)"""
+    if isinstance(X, torch.Tensor):
+        return X.to(dev)
+    Xt = torch.as_tensor(np.asarray(X))
+    if not torch.is_floating_point(Xt):
+        Xt = Xt.to(torch.get_default_dtype())
+    return Xt.to(dev)
+
+
 def _static_block(X, Y, bw, dev):
     """RBF Gram block, NOT yet differenced. X:[nX,L,d] Y:[nY,L,d] -> [nX,nY,L,L] torch."""
-    Xt = torch.as_tensor(np.asarray(X), dtype=torch.float32, device=dev)
-    Yt = torch.as_tensor(np.asarray(Y), dtype=torch.float32, device=dev)
+    Xt = _as_block_tensor(X, dev)
+    Yt = _as_block_tensor(Y, dev)
     d2 = (Xt[:, None, :, None, :] - Yt[None, :, None, :, :]).pow(2).sum(-1)
     return torch.exp(-d2 / (2.0 * bw * bw))                      # [nX,nY,L,L]
 
@@ -63,7 +78,7 @@ def _second_diff(G):
 def _diag_block(X, bw, dev):
     """Self-pair differenced blocks, [n, L-1, L-1]: the i-th path against itself. Computed in
     O(n L^2) (NOT via the full [n,n,L,L] cross block), so it is cheap to call per eval row-block."""
-    Xt = torch.as_tensor(np.asarray(X), dtype=torch.float32, device=dev)   # [n,L,d]
+    Xt = _as_block_tensor(X, dev)                                          # [n,L,d]
     d2 = (Xt[:, :, None, :] - Xt[:, None, :, :]).pow(2).sum(-1)            # [n,L,L]
     return _second_diff(torch.exp(-d2 / (2.0 * bw * bw)))                  # [n,L-1,L-1]
 
@@ -73,7 +88,10 @@ def _cka_loss(K, y):
     Valid for binary (+/-1) AND centered-continuous y (regression): the centering Hc handles
     the target's mean, so a centered continuous y yields the linear-in-y alignment direction."""
     n = K.shape[0]
-    Hc = torch.eye(n, device=K.device) - 1.0 / n
+    # Match K's dtype so a float64 kernel (preserved input dtype, F3) doesn't
+    # collide with a float32 centering matrix / target during the fit.
+    Hc = torch.eye(n, device=K.device, dtype=K.dtype) - 1.0 / n
+    y = y.to(K.dtype)
     Kc, Yc = Hc @ K @ Hc, Hc @ torch.outer(y, y) @ Hc
     return -(Kc * Yc).sum() / (Kc.norm() * Yc.norm() + 1e-12)
 
@@ -429,7 +447,9 @@ class GeneralSignatureKernel:
 
     def __call__(self, X, Y=None, diag=False, return_on_gpu=False):
         if self._kind == "ksig":
-            return self._engine(X, Y, return_on_gpu=return_on_gpu)
+            # Delegated KSig engines honor the full call contract incl. `diag`
+            # (audit F2); forward it so diag=True returns shape (n,) not (n,n).
+            return self._engine(X, Y, diag=diag, return_on_gpu=return_on_gpu)
         return self._engine(X, Y, diag=diag, return_on_gpu=return_on_gpu)
 
 
